@@ -134,7 +134,9 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
     expect(snap.nodeMetrics.srv?.meanWaitingTimeMs).toBe(50);
     expect(snap.global.meanLatencyMs).toBe(150);
 
-    const latencies = snap.recentTraces.map((t) => t.totalLatencyMs).sort((a, b) => (a ?? 0) - (b ?? 0));
+    const latencies = snap.recentTraces
+      .map((t) => t.totalLatencyMs)
+      .sort((a, b) => (a ?? 0) - (b ?? 0));
     expect(latencies).toEqual([100, 200]);
   });
 
@@ -263,7 +265,10 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
       ],
     });
 
-    const missSnap = new SimulationEngine(buildGraph(0), { seed: 5, durationMs: 1000 }).runToCompletion();
+    const missSnap = new SimulationEngine(buildGraph(0), {
+      seed: 5,
+      durationMs: 1000,
+    }).runToCompletion();
     assertConservation(missSnap);
     expect(missSnap.global.succeeded).toBe(10);
     expect(missSnap.nodeMetrics.cache?.cacheHits).toBe(0);
@@ -271,7 +276,10 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
     expect(missSnap.nodeMetrics.db?.dbReads).toBe(10);
     expect(missSnap.global.meanLatencyMs).toBe(1 + 2 + 4 + 30);
 
-    const hitSnap = new SimulationEngine(buildGraph(1), { seed: 5, durationMs: 1000 }).runToCompletion();
+    const hitSnap = new SimulationEngine(buildGraph(1), {
+      seed: 5,
+      durationMs: 1000,
+    }).runToCompletion();
     assertConservation(hitSnap);
     expect(hitSnap.global.succeeded).toBe(10);
     expect(hitSnap.nodeMetrics.cache?.cacheHits).toBe(10);
@@ -327,7 +335,11 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
       },
     ];
 
-    const snap = new SimulationEngine(graph, { seed: 1, durationMs: 6000 }, faults).runToCompletion();
+    const snap = new SimulationEngine(
+      graph,
+      { seed: 1, durationMs: 6000 },
+      faults,
+    ).runToCompletion();
 
     assertConservation(snap);
     expect(snap.global.generated).toBe(6);
@@ -426,7 +438,11 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
     };
 
     // Check mid-run AND after completion with drain disabled AND enabled
-    const midEngine = new SimulationEngine(graph, { seed: 42, durationMs: 4000, drainOnEnd: false });
+    const midEngine = new SimulationEngine(graph, {
+      seed: 42,
+      durationMs: 4000,
+      drainOnEnd: false,
+    });
     midEngine.runUntil(2000);
     assertConservation(midEngine.getSnapshot(false));
     const endNoDrain = midEngine.runToCompletion();
@@ -435,7 +451,11 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
     expect(endNoDrain.global.succeeded).toBeGreaterThan(0);
     expect(endNoDrain.global.failed).toBeGreaterThan(0);
 
-    const drainEngine = new SimulationEngine(graph, { seed: 42, durationMs: 4000, drainOnEnd: true });
+    const drainEngine = new SimulationEngine(graph, {
+      seed: 42,
+      durationMs: 4000,
+      drainOnEnd: true,
+    });
     const endWithDrain = drainEngine.runToCompletion();
     assertConservation(endWithDrain);
     expect(endWithDrain.global.inFlight).toBe(0);
@@ -506,7 +526,10 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
       ],
     };
 
-    const runHeadless = new SimulationEngine(graph, { seed: 9001, durationMs: 5000 }).runToCompletion();
+    const runHeadless = new SimulationEngine(graph, {
+      seed: 9001,
+      durationMs: 5000,
+    }).runToCompletion();
 
     // Run 2: step 50ms slices (simulates slow 1x playback)
     const sliceEngine = new SimulationEngine(graph, { seed: 9001, durationMs: 5000 });
@@ -521,7 +544,10 @@ describe('Analytical Simulation Verification (Tests A–H)', () => {
     expect(runSliced.timeSeries).toEqual(runHeadless.timeSeries);
 
     // Different seed must diverge
-    const runDifferentSeed = new SimulationEngine(graph, { seed: 9002, durationMs: 5000 }).runToCompletion();
+    const runDifferentSeed = new SimulationEngine(graph, {
+      seed: 9002,
+      durationMs: 5000,
+    }).runToCompletion();
     expect(runDifferentSeed.global.meanLatencyMs).not.toBe(runHeadless.global.meanLatencyMs);
   });
 

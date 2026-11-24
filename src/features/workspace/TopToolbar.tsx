@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -52,6 +52,8 @@ const DURATION_OPTIONS = [
 
 export function TopToolbar() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectMenuRef = useRef<HTMLDivElement>(null);
+  const validationMenuRef = useRef<HTMLDivElement>(null);
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [validationOpen, setValidationOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -59,6 +61,40 @@ export function TopToolbar() {
   const [nameDraft, setNameDraft] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!projectMenuOpen && !validationOpen) return;
+
+    const handlePointerDown = (ev: MouseEvent): void => {
+      const target = ev.target as Node | null;
+      if (projectMenuOpen && projectMenuRef.current && !projectMenuRef.current.contains(target)) {
+        setProjectMenuOpen(false);
+        setConfirmDeleteId(null);
+      }
+      if (
+        validationOpen &&
+        validationMenuRef.current &&
+        !validationMenuRef.current.contains(target)
+      ) {
+        setValidationOpen(false);
+      }
+    };
+
+    const handleKeyDown = (ev: KeyboardEvent): void => {
+      if (ev.key === 'Escape') {
+        setProjectMenuOpen(false);
+        setValidationOpen(false);
+        setConfirmDeleteId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [projectMenuOpen, validationOpen]);
 
   const project = useWorkspaceStore((s) => s.project);
   const projects = useWorkspaceStore((s) => s.projects);
@@ -112,6 +148,14 @@ export function TopToolbar() {
     100,
     Math.max(0, (virtualTimeMs / Math.max(1, project.simConfig.durationMs)) * 100),
   );
+  const durationOptions = useMemo(() => {
+    const hasCurrent = DURATION_OPTIONS.some((d) => d.value === project.simConfig.durationMs);
+    if (hasCurrent) return DURATION_OPTIONS;
+    return [
+      ...DURATION_OPTIONS,
+      { label: `${project.simConfig.durationMs / 1000}s`, value: project.simConfig.durationMs },
+    ].sort((a, b) => a.value - b.value);
+  }, [project.simConfig.durationMs]);
 
   const handleImportFile = async (ev: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = ev.target.files?.[0];
@@ -150,13 +194,16 @@ export function TopToolbar() {
             aria-label="SystemLab Home"
           >
             <img src="./logo.svg" alt="" className="h-6 w-6" />
-            <span className="text-sm font-bold tracking-tight" style={{ color: 'var(--sl-text-primary)' }}>
+            <span
+              className="text-sm font-bold tracking-tight"
+              style={{ color: 'var(--sl-text-primary)' }}
+            >
               SystemLab
             </span>
           </button>
 
           {/* Project Dropdown */}
-          <div className="relative">
+          <div ref={projectMenuRef} className="relative">
             {renaming ? (
               <form
                 className="flex items-center gap-1"
@@ -190,7 +237,11 @@ export function TopToolbar() {
                 aria-expanded={projectMenuOpen}
                 aria-label="Project menu"
                 onClick={() => {
-                  setProjectMenuOpen((v) => !v);
+                  setProjectMenuOpen((v) => {
+                    const next = !v;
+                    if (!next) setConfirmDeleteId(null);
+                    return next;
+                  });
                   setValidationOpen(false);
                 }}
                 className="inline-flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-medium"
@@ -217,7 +268,10 @@ export function TopToolbar() {
                   borderColor: 'var(--sl-border-default)',
                 }}
               >
-                <div className="grid grid-cols-2 gap-1 pb-2 border-b" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+                <div
+                  className="grid grid-cols-2 gap-1 pb-2 border-b"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -287,7 +341,10 @@ export function TopToolbar() {
                 )}
 
                 <div className="mt-2">
-                  <div className="px-2 pb-1 text-[11px] font-medium" style={{ color: 'var(--sl-text-muted)' }}>
+                  <div
+                    className="px-2 pb-1 text-[11px] font-medium"
+                    style={{ color: 'var(--sl-text-muted)' }}
+                  >
                     Recent Projects ({projects.length})
                   </div>
                   <div className="max-h-44 overflow-y-auto space-y-0.5">
@@ -323,7 +380,7 @@ export function TopToolbar() {
                               setConfirmDeleteId(null);
                             }}
                             className="rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-                            style={{ backgroundColor: 'var(--sl-accent-danger)' }}
+                            style={{ backgroundColor: 'var(--sl-btn-danger-bg)' }}
                           >
                             Confirm
                           </button>
@@ -370,8 +427,7 @@ export function TopToolbar() {
                 onClick={() => setActiveView(tab.id)}
                 className="rounded px-2.5 py-1 text-xs font-medium transition-colors"
                 style={{
-                  backgroundColor:
-                    activeView === tab.id ? 'var(--sl-bg-elevated)' : 'transparent',
+                  backgroundColor: activeView === tab.id ? 'var(--sl-bg-elevated)' : 'transparent',
                   color:
                     activeView === tab.id ? 'var(--sl-text-primary)' : 'var(--sl-text-secondary)',
                   border:
@@ -390,7 +446,10 @@ export function TopToolbar() {
         <div className="flex flex-wrap items-center gap-2">
           {activeView === 'workspace' && (
             <>
-              <div className="hidden lg:flex items-center gap-1 border-r pr-2" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+              <div
+                className="hidden lg:flex items-center gap-1 border-r pr-2"
+                style={{ borderColor: 'var(--sl-border-subtle)' }}
+              >
                 <button
                   type="button"
                   disabled={locked || pastCount === 0}
@@ -440,12 +499,13 @@ export function TopToolbar() {
               </div>
 
               {/* Validation Pill */}
-              <div className="relative">
+              <div ref={validationMenuRef} className="relative">
                 <button
                   type="button"
                   onClick={() => {
                     setValidationOpen((v) => !v);
                     setProjectMenuOpen(false);
+                    setConfirmDeleteId(null);
                   }}
                   aria-label="Graph validation status"
                   className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs font-medium"
@@ -546,7 +606,7 @@ export function TopToolbar() {
                     onClick={() => run(project, visMode)}
                     aria-label="Run simulation"
                     className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-40"
-                    style={{ backgroundColor: 'var(--sl-accent-compute)' }}
+                    style={{ backgroundColor: 'var(--sl-btn-run-bg)' }}
                   >
                     <Play className="h-3.5 w-3.5" />
                     Run
@@ -558,7 +618,7 @@ export function TopToolbar() {
                     onClick={pause}
                     aria-label="Pause simulation"
                     className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold text-white"
-                    style={{ backgroundColor: 'var(--sl-accent-warning)' }}
+                    style={{ backgroundColor: 'var(--sl-btn-pause-bg)' }}
                   >
                     <Pause className="h-3.5 w-3.5" />
                     Pause
@@ -570,7 +630,7 @@ export function TopToolbar() {
                     onClick={resume}
                     aria-label="Resume simulation"
                     className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold text-white"
-                    style={{ backgroundColor: 'var(--sl-accent-compute)' }}
+                    style={{ backgroundColor: 'var(--sl-btn-run-bg)' }}
                   >
                     <Play className="h-3.5 w-3.5" />
                     Resume
@@ -695,7 +755,7 @@ export function TopToolbar() {
                     color: 'var(--sl-text-primary)',
                   }}
                 >
-                  {DURATION_OPTIONS.map((d) => (
+                  {durationOptions.map((d) => (
                     <option key={d.value} value={d.value}>
                       {d.label}
                     </option>

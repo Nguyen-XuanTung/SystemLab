@@ -1,6 +1,7 @@
 # Roadmap — SystemLab
 
-## Completed (v0.1.0 — P0 & P1 Core)
+## Completed (v1.0.0 — P0 & P1 Core)
+
 - Pure deterministic TypeScript DES kernel (`VirtualClock`, `MinHeap`, `SeededRng`)
 - 10 verified component models & analytical Tests A–H
 - Interactive React Flow editor, inspector, Recharts telemetry, bounded event/trace inspection
@@ -11,6 +12,7 @@
 - CI & GitHub Pages deployment workflows
 
 ## Future Roadmap (P2 — Planned)
+
 - Stateful key-level LRU / LFU cache simulation with configurable TTL expiration
 - Multiple independent Client traffic groups with per-group SLO dashboards
 - Configurable primary-to-replica replication lag on Read Replica topologies

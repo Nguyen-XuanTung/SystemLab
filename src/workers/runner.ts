@@ -1,9 +1,5 @@
 import { GraphValidationError, SimulationEngine } from '@/engine/core/engine';
-import type {
-  ArchitectureGraph,
-  ScheduledFault,
-  SimulationConfig,
-} from '@/engine/models/types';
+import type { ArchitectureGraph, ScheduledFault, SimulationConfig } from '@/engine/models/types';
 import type { VisualizationMode } from '@/features/persistence/repository';
 import type { WorkerCommand, WorkerResponse } from './protocol';
 
@@ -190,7 +186,7 @@ export class WorkerSessionRunner {
         if (cmd.runId !== this.activeRunId || !this.engine) return;
         this.engine.recoverFault(cmd.faultId);
         this.emit({
-          type: 'SNAPSHOT',
+          type: this.isPlaying ? 'SNAPSHOT' : 'PAUSED',
           runId: this.activeRunId,
           snapshot: this.engine.getSnapshot(false),
         });
@@ -199,7 +195,7 @@ export class WorkerSessionRunner {
       case 'REQUEST_SNAPSHOT':
         if (cmd.runId !== this.activeRunId || !this.engine) return;
         this.emit({
-          type: 'SNAPSHOT',
+          type: this.isPlaying ? 'SNAPSHOT' : 'PAUSED',
           runId: this.activeRunId,
           snapshot: this.engine.getSnapshot(false),
         });

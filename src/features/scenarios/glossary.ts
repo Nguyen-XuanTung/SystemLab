@@ -27,8 +27,7 @@ export const SYSTEM_DESIGN_GLOSSARY: GlossaryEntry[] = [
     summary:
       'Total elapsed virtual time from request creation at the client until terminal success completion.',
     formula: 'Latency = Sum(Network Delay + Queue Wait + Service Time)',
-    intuition:
-      'Under high load, queue waiting time often dwarfs actual processing time.',
+    intuition: 'Under high load, queue waiting time often dwarfs actual processing time.',
     relatedScenarioId: 'scenario-01-hello-system-design',
   },
   {
@@ -142,8 +141,7 @@ export const SYSTEM_DESIGN_GLOSSARY: GlossaryEntry[] = [
     category: 'Resilience',
     summary:
       'Ability of an architecture to continue fulfilling requests cleanly despite crashes, latency spikes, or partial link failures.',
-    intuition:
-      'Tested deliberately in Chaos Lab before outages occur unexpectedly.',
+    intuition: 'Tested deliberately in Chaos Lab before outages occur unexpectedly.',
     relatedScenarioId: 'scenario-08-failure-and-recovery',
   },
   {
@@ -152,8 +150,7 @@ export const SYSTEM_DESIGN_GLOSSARY: GlossaryEntry[] = [
     category: 'Resilience',
     summary:
       'Admission control algorithm that allows short bursts up to bucket capacity while capping long-term average rate.',
-    intuition:
-      'Protects downstream compute and databases during flash crowds or retry storms.',
+    intuition: 'Protects downstream compute and databases during flash crowds or retry storms.',
     relatedScenarioId: 'scenario-05-rate-limiting',
   },
   {

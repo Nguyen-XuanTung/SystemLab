@@ -70,8 +70,20 @@ describe('Graph & Configuration Validator', () => {
     expect(dupRes.issues.some((i) => i.code === 'DUPLICATE_EDGE_ID')).toBe(true);
 
     const badEdge = makeValidBase();
-    badEdge.edges.push({ id: 'e-bad', source: 'app', target: 'missing', latencyMs: -5, routeType: 'default' });
-    badEdge.edges.push({ id: 'e-loop', source: 'app', target: 'app', latencyMs: 1, routeType: 'default' });
+    badEdge.edges.push({
+      id: 'e-bad',
+      source: 'app',
+      target: 'missing',
+      latencyMs: -5,
+      routeType: 'default',
+    });
+    badEdge.edges.push({
+      id: 'e-loop',
+      source: 'app',
+      target: 'app',
+      latencyMs: 1,
+      routeType: 'default',
+    });
     const badEdgeRes = validateGraph(badEdge);
     expect(badEdgeRes.issues.some((i) => i.code === 'DANGLING_EDGE')).toBe(true);
     expect(badEdgeRes.issues.some((i) => i.code === 'NEGATIVE_EDGE_LATENCY')).toBe(true);
@@ -144,7 +156,12 @@ describe('Graph & Configuration Validator', () => {
     g.nodes.push({
       id: 'mq',
       label: 'Lonely Queue',
-      config: { type: 'message_queue', queueCapacity: 50, enqueueLatencyMs: 2, deliveryMode: 'async_ack' },
+      config: {
+        type: 'message_queue',
+        queueCapacity: 50,
+        enqueueLatencyMs: 2,
+        deliveryMode: 'async_ack',
+      },
     });
     g.edges.push({ id: 'e-mq', source: 'app', target: 'mq', latencyMs: 1, routeType: 'default' });
     g.nodes.push({
@@ -162,9 +179,15 @@ describe('Graph & Configuration Validator', () => {
 
     const res = validateGraph(g);
     expect(res.valid).toBe(true);
-    expect(res.issues.some((i) => i.severity === 'warning' && i.code === 'MQ_WITHOUT_WORKER')).toBe(true);
-    expect(res.issues.some((i) => i.severity === 'warning' && i.code === 'UNREACHABLE_NODE')).toBe(true);
-    expect(res.issues.some((i) => i.severity === 'warning' && i.code === 'DISCONNECTED_WORKER')).toBe(true);
+    expect(res.issues.some((i) => i.severity === 'warning' && i.code === 'MQ_WITHOUT_WORKER')).toBe(
+      true,
+    );
+    expect(res.issues.some((i) => i.severity === 'warning' && i.code === 'UNREACHABLE_NODE')).toBe(
+      true,
+    );
+    expect(
+      res.issues.some((i) => i.severity === 'warning' && i.code === 'DISCONNECTED_WORKER'),
+    ).toBe(true);
   });
 
   it('validates config constraints across gateway, cache, database, worker, circuit breaker, replica, and simConfig', () => {
@@ -187,7 +210,12 @@ describe('Graph & Configuration Validator', () => {
         {
           id: 'lb',
           label: 'LB',
-          config: { type: 'load_balancer', strategy: 'round_robin', processingLatencyMs: -1, healthCheckEnabled: true },
+          config: {
+            type: 'load_balancer',
+            strategy: 'round_robin',
+            processingLatencyMs: -1,
+            healthCheckEnabled: true,
+          },
         },
         {
           id: 'gw',
@@ -229,7 +257,12 @@ describe('Graph & Configuration Validator', () => {
         {
           id: 'mq',
           label: 'MQ',
-          config: { type: 'message_queue', queueCapacity: 0, enqueueLatencyMs: -1, deliveryMode: 'async_ack' },
+          config: {
+            type: 'message_queue',
+            queueCapacity: 0,
+            enqueueLatencyMs: -1,
+            deliveryMode: 'async_ack',
+          },
         },
         {
           id: 'w',

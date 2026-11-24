@@ -89,7 +89,7 @@ Nếu dùng tick `1 ms`, giả sử trong `100 ms` đầu không có request nà
   3. Nếu trùng tiếp, so sánh `sequence` tăng đơn điệu (FIFO tuyệt đối, không bao giờ mơ hồ).
 
 ### Định nghĩa Event Ordering & Determinism (`SeededRng`)
-- `src/engine/random/prng.ts` dùng **SplitMix32** để băm seed đầu vào (kể cả seed chuỗi/số) thành state 128-bit cho **xoshiro128\*\*** — PRNG cực nhanh, chu kỳ $2^{128}-1$, chất lượng thống kê tốt hơn nhiều so với LCG đơn giản và hoàn toàn tách khỏi `Math.random()`.
+- `src/engine/random/prng.ts` dùng **SplitMix32** để băm seed số nguyên không âm thành state 128-bit cho **xoshiro128\*\*** — PRNG cực nhanh, chu kỳ $2^{128}-1$, chất lượng thống kê tốt hơn nhiều so với LCG đơn giản và hoàn toàn tách khỏi `Math.random()`.
 - Hỗ trợ `.fork()` để sinh nhánh PRNG con theo từng node/mục đích: thay đổi thông số phân phối của một node không làm xáo trộn ngẫu nhiên ngoài ý muốn ở nơi khác nếu seed phân nhánh độc lập.
 - Sinh thời gian đến & thời gian xử lý thông qua `nextFloat()`, `nextExponentialMs()`, `nextServiceTimeMs()`.
 
@@ -98,8 +98,8 @@ Nếu dùng tick `1 ms`, giả sử trong `100 ms` đầu không có request nà
 ## 5. Vòng đời một Request & Bất biến Bảo toàn
 
 Một HTTP logical request bắt đầu từ node `client`, nhận một `requestId` duy nhất và ghi nhận bộ đếm `generated + 1`. Khi đi qua các node trung gian:
-1. **Load Balancing:** Chọn nhánh hạ nguồn (như round-robin / weighted / least-connections tùy cấu hình edge/LB).
-2. **Circuit Breaker:** Nếu tỷ lệ lỗi hoặc ngưỡng mở mạch kích hoạt, chuyển trạng thái mở và fail-fast ngay lập tức thay vì dồn tải chết vào upstream.
+1. **Load Balancing:** Chọn nhánh hạ nguồn (`round_robin`, `random`, hoặc `least_in_flight` tùy cấu hình LB).
+2. **Circuit Breaker:** Nếu số lỗi liên tiếp đạt `failureThreshold`, chuyển trạng thái mở và fail-fast ngay lập tức thay vì dồn tải chết vào upstream.
 3. **Cache (`cache`):** Kiểm tra xác suất hit (`FaultManager.getEffectiveCacheHitRatio()` có tính đến fault giảm cache hit nếu Chaos Lab đang bật). Hit thì trả về ngay với latency cache; Miss thì đẩy tiếp xuống DB/origin.
 4. **Queueing (`G/G/c/K`):** Tại server/DB/replica có giới hạn `concurrency = c` và `queueCapacity = K`:
    - Nếu có slot rảnh (`active < c`): xử lý ngay (`serviceTime` lấy từ `SeededRng.nextServiceTimeMs()`).

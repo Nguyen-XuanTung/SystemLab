@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowUpDown, CheckCircle2 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { formatMs, formatPct, formatRps } from '@/lib/format';
+import { formatMs, formatPct, formatRps, hasCapacityPool } from '@/lib/format';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 
@@ -47,9 +47,21 @@ export function OverviewPanel() {
       >
         {[
           { label: 'Generated', value: g ? String(g.generated) : '—' },
-          { label: 'Succeeded', value: g ? String(g.succeeded) : '—', color: 'var(--sl-accent-success)' },
-          { label: 'Failed', value: g ? String(g.failed) : '—', color: g && g.failed > 0 ? 'var(--sl-accent-danger)' : undefined },
-          { label: 'Timed Out', value: g ? String(g.timedOut) : '—', color: g && g.timedOut > 0 ? 'var(--sl-accent-warning)' : undefined },
+          {
+            label: 'Succeeded',
+            value: g ? String(g.succeeded) : '—',
+            color: 'var(--sl-accent-success)',
+          },
+          {
+            label: 'Failed',
+            value: g ? String(g.failed) : '—',
+            color: g && g.failed > 0 ? 'var(--sl-accent-danger)' : undefined,
+          },
+          {
+            label: 'Timed Out',
+            value: g ? String(g.timedOut) : '—',
+            color: g && g.timedOut > 0 ? 'var(--sl-accent-warning)' : undefined,
+          },
           { label: 'In-Flight', value: g ? String(g.inFlight) : '—' },
           { label: 'Throughput', value: g ? formatRps(g.throughputRps) : '—' },
           { label: 'Error Rate', value: g ? formatPct(g.errorRate, true) : '—' },
@@ -58,7 +70,11 @@ export function OverviewPanel() {
           { label: 'P95', value: g ? formatMs(g.p95LatencyMs) : '—' },
           { label: 'P99', value: g ? formatMs(g.p99LatencyMs) : '—' },
         ].map((metric) => (
-          <div key={metric.label} className="px-2.5 py-2" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+          <div
+            key={metric.label}
+            className="px-2.5 py-2"
+            style={{ borderColor: 'var(--sl-border-subtle)' }}
+          >
             <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
               {metric.label}
             </div>
@@ -87,10 +103,12 @@ export function OverviewPanel() {
                 }}
               >
                 <CheckCircle2 className="h-3 w-3" />
-                Conservation: {g.generated} = {g.succeeded} + {g.failed} + {g.timedOut} + {g.inFlight}
+                Conservation: {g.generated} = {g.succeeded} + {g.failed} + {g.timedOut} +{' '}
+                {g.inFlight}
               </span>
               <span className="font-mono-tabular" style={{ color: 'var(--sl-text-muted)' }}>
-                Events: {g.processedEvents.toLocaleString()} · Samples: {g.sampleCount.toLocaleString()}
+                Events: {g.processedEvents.toLocaleString()} · Samples:{' '}
+                {g.sampleCount.toLocaleString()}
               </span>
             </>
           ) : (
@@ -116,38 +134,61 @@ export function OverviewPanel() {
             >
               <tr>
                 <th className="px-3 py-1.5">
-                  <button type="button" onClick={() => handleSort('label')} className="inline-flex items-center gap-1 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('label')}
+                    className="inline-flex items-center gap-1 font-medium"
+                  >
                     Component <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
                 <th className="px-2 py-1.5">Status</th>
                 <th className="px-2 py-1.5">
-                  <button type="button" onClick={() => handleSort('arrivals')} className="inline-flex items-center gap-1 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('arrivals')}
+                    className="inline-flex items-center gap-1 font-medium"
+                  >
                     Arrivals <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
                 <th className="px-2 py-1.5">Done</th>
                 <th className="px-2 py-1.5">Active</th>
                 <th className="px-2 py-1.5">
-                  <button type="button" onClick={() => handleSort('queueDepth')} className="inline-flex items-center gap-1 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('queueDepth')}
+                    className="inline-flex items-center gap-1 font-medium"
+                  >
                     Queue (Max) <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
                 <th className="px-2 py-1.5">Svc / Wait</th>
                 <th className="px-2 py-1.5">
-                  <button type="button" onClick={() => handleSort('utilization')} className="inline-flex items-center gap-1 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('utilization')}
+                    className="inline-flex items-center gap-1 font-medium"
+                  >
                     Util <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
                 <th className="px-2 py-1.5">
-                  <button type="button" onClick={() => handleSort('failedRequests')} className="inline-flex items-center gap-1 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('failedRequests')}
+                    className="inline-flex items-center gap-1 font-medium"
+                  >
                     Drop / Fail <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
                 <th className="px-3 py-1.5">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y font-mono-tabular" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+            <tbody
+              className="divide-y font-mono-tabular"
+              style={{ borderColor: 'var(--sl-border-subtle)' }}
+            >
               {nodeRows.map((row) => {
                 const details =
                   row.type === 'cache'
@@ -156,11 +197,13 @@ export function OverviewPanel() {
                       ? `RL: ${row.rateLimitedCount}`
                       : row.type === 'database' || row.type === 'read_replica'
                         ? `R:${row.dbReads} W:${row.dbWrites}`
-                        : row.type === 'message_queue' || row.type === 'worker'
+                        : row.type === 'message_queue'
                           ? `Jobs: ${row.jobsCompleted}/${row.jobsEnqueued}`
-                          : row.type === 'circuit_breaker'
-                            ? `${(row.circuitState ?? 'closed').toUpperCase()} (${row.circuitRejections})`
-                            : '—';
+                          : row.type === 'worker'
+                            ? `Jobs: ${row.jobsCompleted} done${row.jobsFailed > 0 ? ` (${row.jobsFailed} fail)` : ''}`
+                            : row.type === 'circuit_breaker'
+                              ? `${(row.circuitState ?? 'closed').toUpperCase()} (${row.circuitRejections})`
+                              : '—';
 
                 return (
                   <tr
@@ -169,7 +212,10 @@ export function OverviewPanel() {
                     className="cursor-pointer hover:bg-black/10"
                     style={{ borderColor: 'var(--sl-border-subtle)' }}
                   >
-                    <td className="px-3 py-1.5 font-sans font-medium" style={{ color: 'var(--sl-text-primary)' }}>
+                    <td
+                      className="px-3 py-1.5 font-sans font-medium"
+                      style={{ color: 'var(--sl-text-primary)' }}
+                    >
                       {row.label}
                     </td>
                     <td className="px-2 py-1.5 font-sans">
@@ -184,7 +230,9 @@ export function OverviewPanel() {
                     <td className="px-2 py-1.5">
                       {formatMs(row.meanServiceTimeMs, 0)} / {formatMs(row.meanWaitingTimeMs, 0)}
                     </td>
-                    <td className="px-2 py-1.5">{formatPct(row.utilization)}</td>
+                    <td className="px-2 py-1.5">
+                      {hasCapacityPool(row.type) ? formatPct(row.utilization) : '—'}
+                    </td>
                     <td
                       className="px-2 py-1.5"
                       style={{
@@ -196,7 +244,10 @@ export function OverviewPanel() {
                     >
                       {row.droppedRequests} / {row.failedRequests}
                     </td>
-                    <td className="px-3 py-1.5 font-sans text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+                    <td
+                      className="px-3 py-1.5 font-sans text-[11px]"
+                      style={{ color: 'var(--sl-text-secondary)' }}
+                    >
                       {details}
                     </td>
                   </tr>

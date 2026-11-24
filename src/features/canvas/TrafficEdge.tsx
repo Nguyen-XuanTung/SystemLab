@@ -1,10 +1,5 @@
 import { memo } from 'react';
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  getSmoothStepPath,
-  type EdgeProps,
-} from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { useSimulationStore } from '@/store/simulationStore';
 import { type CanvasFlowEdge, useWorkspaceStore } from '@/store/workspaceStore';
 

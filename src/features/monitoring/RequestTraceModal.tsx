@@ -28,13 +28,20 @@ export function RequestTraceModal() {
             color: 'var(--sl-text-primary)',
           }}
         >
-          <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+          <div
+            className="flex items-center justify-between border-b pb-3"
+            style={{ borderColor: 'var(--sl-border-subtle)' }}
+          >
             <Dialog.Title className="flex items-center gap-2 text-sm font-semibold font-mono-tabular">
               <GitCommitHorizontal className="h-4 w-4" />
               Request Trace · {trace?.id}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button type="button" aria-label="Close request trace" className="rounded p-1 hover:bg-black/15">
+              <button
+                type="button"
+                aria-label="Close request trace"
+                className="rounded p-1 hover:bg-black/15"
+              >
                 <X className="h-4 w-4" />
               </button>
             </Dialog.Close>
@@ -42,13 +49,26 @@ export function RequestTraceModal() {
 
           {trace && (
             <>
-              <div id="trace-desc" className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono-tabular">
-                <div className="rounded border p-2" style={{ borderColor: 'var(--sl-border-subtle)' }}>
-                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>Method</div>
+              <div
+                id="trace-desc"
+                className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono-tabular"
+              >
+                <div
+                  className="rounded border p-2"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
+                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+                    Method
+                  </div>
                   <div className="uppercase font-semibold">{trace.method}</div>
                 </div>
-                <div className="rounded border p-2" style={{ borderColor: 'var(--sl-border-subtle)' }}>
-                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>Outcome</div>
+                <div
+                  className="rounded border p-2"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
+                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+                    Outcome
+                  </div>
                   <div
                     className="font-semibold uppercase"
                     style={{
@@ -61,12 +81,22 @@ export function RequestTraceModal() {
                     {trace.terminalState}
                   </div>
                 </div>
-                <div className="rounded border p-2" style={{ borderColor: 'var(--sl-border-subtle)' }}>
-                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>Total Latency</div>
+                <div
+                  className="rounded border p-2"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
+                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+                    Total Latency
+                  </div>
                   <div>{formatMs(trace.totalLatencyMs)}</div>
                 </div>
-                <div className="rounded border p-2" style={{ borderColor: 'var(--sl-border-subtle)' }}>
-                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>Error Category</div>
+                <div
+                  className="rounded border p-2"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
+                  <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+                    Error Category
+                  </div>
                   <div>{trace.errorCategory ?? '—'}</div>
                 </div>
               </div>
@@ -87,17 +117,27 @@ export function RequestTraceModal() {
                         ({hop.nodeType})
                       </span>
                       {hop.note && (
-                        <div className="mt-0.5 text-[11px] font-mono-tabular" style={{ color: 'var(--sl-text-secondary)' }}>
+                        <div
+                          className="mt-0.5 text-[11px] font-mono-tabular"
+                          style={{ color: 'var(--sl-text-secondary)' }}
+                        >
                           {hop.note}
                         </div>
                       )}
                     </div>
                     <div className="text-right font-mono-tabular text-[11px]">
                       <div>
-                        Arrived {hop.arrivedAtMs.toFixed(1)} ms · Wait {hop.queueWaitMs.toFixed(1)} ms ·
-                        Svc {hop.serviceMs.toFixed(1)} ms
+                        Arrived {hop.arrivedAtMs.toFixed(1)} ms · Wait {hop.queueWaitMs.toFixed(1)}{' '}
+                        ms · Svc {hop.serviceMs.toFixed(1)} ms
                       </div>
-                      <div style={{ color: hop.outcome === 'failed' ? 'var(--sl-accent-danger)' : 'var(--sl-accent-compute)' }}>
+                      <div
+                        style={{
+                          color:
+                            hop.outcome === 'failed'
+                              ? 'var(--sl-accent-danger)'
+                              : 'var(--sl-accent-compute)',
+                        }}
+                      >
                         {hop.outcome}
                       </div>
                     </div>

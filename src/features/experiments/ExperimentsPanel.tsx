@@ -1,12 +1,5 @@
 import { useRef, useState } from 'react';
-import {
-  AlertTriangle,
-  Download,
-  FlaskConical,
-  Save,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { AlertTriangle, Download, FlaskConical, Save, Trash2, Upload } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -80,13 +73,25 @@ export function ExperimentsPanel() {
           },
           {
             metric: 'Mean Lat (ms)',
-            Baseline: Number((baseline.summaryMetrics.meanLatencyMs ?? 0).toFixed(2)),
-            Candidate: Number((candidate.summaryMetrics.meanLatencyMs ?? 0).toFixed(2)),
+            Baseline:
+              baseline.summaryMetrics.meanLatencyMs !== null
+                ? Number(baseline.summaryMetrics.meanLatencyMs.toFixed(2))
+                : null,
+            Candidate:
+              candidate.summaryMetrics.meanLatencyMs !== null
+                ? Number(candidate.summaryMetrics.meanLatencyMs.toFixed(2))
+                : null,
           },
           {
             metric: 'P95 Lat (ms)',
-            Baseline: Number((baseline.summaryMetrics.p95LatencyMs ?? 0).toFixed(2)),
-            Candidate: Number((candidate.summaryMetrics.p95LatencyMs ?? 0).toFixed(2)),
+            Baseline:
+              baseline.summaryMetrics.p95LatencyMs !== null
+                ? Number(baseline.summaryMetrics.p95LatencyMs.toFixed(2))
+                : null,
+            Candidate:
+              candidate.summaryMetrics.p95LatencyMs !== null
+                ? Number(candidate.summaryMetrics.p95LatencyMs.toFixed(2))
+                : null,
           },
         ]
       : [];
@@ -120,7 +125,10 @@ export function ExperimentsPanel() {
         }}
       >
         <div className="flex flex-wrap items-center gap-2 flex-1">
-          <FlaskConical className="h-4 w-4 shrink-0" style={{ color: 'var(--sl-accent-routing)' }} />
+          <FlaskConical
+            className="h-4 w-4 shrink-0"
+            style={{ color: 'var(--sl-accent-routing)' }}
+          />
           <input
             type="text"
             value={expName}
@@ -138,7 +146,7 @@ export function ExperimentsPanel() {
             type="submit"
             disabled={!canSave}
             className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
-            style={{ backgroundColor: 'var(--sl-accent-routing)' }}
+            style={{ backgroundColor: 'var(--sl-btn-routing-bg)' }}
           >
             <Save className="h-3.5 w-3.5" />
             Save Snapshot
@@ -160,13 +168,18 @@ export function ExperimentsPanel() {
           ref={fileRef}
           type="file"
           accept="application/json,.json"
+          aria-label="Import experiment JSON file"
           className="hidden"
           onChange={handleImport}
         />
       </form>
 
       {importErr && (
-        <div role="alert" className="rounded border px-3 py-2 text-xs" style={{ borderColor: 'var(--sl-accent-danger)', color: 'var(--sl-accent-danger)' }}>
+        <div
+          role="alert"
+          className="rounded border px-3 py-2 text-xs"
+          style={{ borderColor: 'var(--sl-accent-danger)', color: 'var(--sl-accent-danger)' }}
+        >
           {importErr}
         </div>
       )}
@@ -205,10 +218,16 @@ export function ExperimentsPanel() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
+                        <div
+                          className="truncate font-semibold"
+                          style={{ color: 'var(--sl-text-primary)' }}
+                        >
                           {exp.name}
                         </div>
-                        <div className="text-[11px] font-mono-tabular" style={{ color: 'var(--sl-text-muted)' }}>
+                        <div
+                          className="text-[11px] font-mono-tabular"
+                          style={{ color: 'var(--sl-text-muted)' }}
+                        >
                           Seed {exp.seed} · {(exp.durationMs / 1000).toFixed(0)}s ·{' '}
                           {formatRps(exp.summaryMetrics.throughputRps)} · P95{' '}
                           {formatMs(exp.summaryMetrics.p95LatencyMs)}
@@ -249,8 +268,10 @@ export function ExperimentsPanel() {
                         onClick={() => setBaseline(exp.id)}
                         className="rounded border px-2 py-0.5 text-[11px] font-medium"
                         style={{
-                          backgroundColor: isBase ? 'var(--sl-accent-traffic)' : 'transparent',
-                          borderColor: isBase ? 'var(--sl-accent-traffic)' : 'var(--sl-border-default)',
+                          backgroundColor: isBase ? 'var(--sl-btn-primary-bg)' : 'transparent',
+                          borderColor: isBase
+                            ? 'var(--sl-btn-primary-bg)'
+                            : 'var(--sl-border-default)',
                           color: isBase ? 'white' : 'var(--sl-text-secondary)',
                         }}
                       >
@@ -261,8 +282,10 @@ export function ExperimentsPanel() {
                         onClick={() => setCandidate(exp.id)}
                         className="rounded border px-2 py-0.5 text-[11px] font-medium"
                         style={{
-                          backgroundColor: isCand ? 'var(--sl-accent-routing)' : 'transparent',
-                          borderColor: isCand ? 'var(--sl-accent-routing)' : 'var(--sl-border-default)',
+                          backgroundColor: isCand ? 'var(--sl-btn-routing-bg)' : 'transparent',
+                          borderColor: isCand
+                            ? 'var(--sl-btn-routing-bg)'
+                            : 'var(--sl-border-default)',
                           color: isCand ? 'white' : 'var(--sl-text-secondary)',
                         }}
                       >
@@ -301,7 +324,8 @@ export function ExperimentsPanel() {
                   className="rounded border p-2.5 text-[11px]"
                   style={{
                     borderColor: 'var(--sl-accent-warning)',
-                    backgroundColor: 'color-mix(in srgb, var(--sl-accent-warning) 10%, transparent)',
+                    backgroundColor:
+                      'color-mix(in srgb, var(--sl-accent-warning) 10%, transparent)',
                     color: 'var(--sl-accent-warning)',
                   }}
                 >
@@ -317,7 +341,10 @@ export function ExperimentsPanel() {
                 </div>
               )}
 
-              <div className="overflow-x-auto rounded border" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+              <div
+                className="overflow-x-auto rounded border"
+                style={{ borderColor: 'var(--sl-border-subtle)' }}
+              >
                 <table className="w-full text-left text-xs">
                   <thead
                     className="border-b text-[11px]"
@@ -334,7 +361,10 @@ export function ExperimentsPanel() {
                       <th className="px-2.5 py-1.5">Difference</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y font-mono-tabular" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+                  <tbody
+                    className="divide-y font-mono-tabular"
+                    style={{ borderColor: 'var(--sl-border-subtle)' }}
+                  >
                     {[
                       {
                         label: 'Throughput',
@@ -430,8 +460,16 @@ export function ExperimentsPanel() {
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: '11px' }} />
-                    <Bar dataKey="Baseline" fill="var(--sl-accent-traffic)" isAnimationActive={false} />
-                    <Bar dataKey="Candidate" fill="var(--sl-accent-routing)" isAnimationActive={false} />
+                    <Bar
+                      dataKey="Baseline"
+                      fill="var(--sl-accent-traffic)"
+                      isAnimationActive={false}
+                    />
+                    <Bar
+                      dataKey="Candidate"
+                      fill="var(--sl-accent-routing)"
+                      isAnimationActive={false}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

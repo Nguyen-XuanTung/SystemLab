@@ -7,7 +7,13 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 
 const FAULT_META: Record<
   FaultType,
-  { label: string; targetKind: 'node' | 'edge'; defaultValue: number; valueLabel: string; hint: string }
+  {
+    label: string;
+    targetKind: 'node' | 'edge';
+    defaultValue: number;
+    valueLabel: string;
+    hint: string;
+  }
 > = {
   node_failure: {
     label: 'Node Failure (Crash)',
@@ -80,7 +86,9 @@ export function ChaosLabPanel() {
   const isLive = simStatus === 'running' || simStatus === 'paused';
 
   const [faultType, setFaultType] = useState<FaultType>('node_failure');
-  const [targetId, setTargetId] = useState<string>(project.nodes[1]?.id ?? project.nodes[0]?.id ?? '');
+  const [targetId, setTargetId] = useState<string>(
+    project.nodes[1]?.id ?? project.nodes[0]?.id ?? '',
+  );
   const [value, setValue] = useState<number>(FAULT_META.node_failure.defaultValue);
   const [startSec, setStartSec] = useState<number>(4);
   const [durationSec, setDurationSec] = useState<number>(6);
@@ -99,8 +107,7 @@ export function ChaosLabPanel() {
   const handleTypeChange = (nextType: FaultType): void => {
     setFaultType(nextType);
     setValue(FAULT_META[nextType].defaultValue);
-    const nextTargets =
-      FAULT_META[nextType].targetKind === 'edge' ? project.edges : project.nodes;
+    const nextTargets = FAULT_META[nextType].targetKind === 'edge' ? project.edges : project.nodes;
     if (nextTargets[0]) {
       setTargetId(nextTargets[0].id);
     }
@@ -121,7 +128,10 @@ export function ChaosLabPanel() {
         }}
       >
         <div className="flex items-center justify-between">
-          <h3 className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
+          <h3
+            className="flex items-center gap-1.5 text-xs font-semibold"
+            style={{ color: 'var(--sl-text-primary)' }}
+          >
             <Flame className="h-3.5 w-3.5" style={{ color: 'var(--sl-accent-danger)' }} />
             {isLive ? 'Live Fault Injection' : 'Schedule Chaos Fault'}
           </h3>
@@ -132,7 +142,11 @@ export function ChaosLabPanel() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           <div>
-            <label htmlFor="chaos-fault-type" className="block text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+            <label
+              htmlFor="chaos-fault-type"
+              className="block text-[11px]"
+              style={{ color: 'var(--sl-text-secondary)' }}
+            >
               Fault Type
             </label>
             <select
@@ -155,7 +169,11 @@ export function ChaosLabPanel() {
           </div>
 
           <div>
-            <label htmlFor="chaos-target" className="block text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+            <label
+              htmlFor="chaos-target"
+              className="block text-[11px]"
+              style={{ color: 'var(--sl-text-secondary)' }}
+            >
               Target {meta.targetKind === 'edge' ? 'Connection' : 'Component'}
             </label>
             <select
@@ -184,7 +202,11 @@ export function ChaosLabPanel() {
 
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div>
-            <label htmlFor="chaos-value" className="block text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+            <label
+              htmlFor="chaos-value"
+              className="block text-[11px]"
+              style={{ color: 'var(--sl-text-secondary)' }}
+            >
               {meta.valueLabel}
             </label>
             <input
@@ -205,7 +227,11 @@ export function ChaosLabPanel() {
 
           {!isLive && (
             <div>
-              <label htmlFor="chaos-start-sec" className="block text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+              <label
+                htmlFor="chaos-start-sec"
+                className="block text-[11px]"
+                style={{ color: 'var(--sl-text-secondary)' }}
+              >
                 Start (s)
               </label>
               <input
@@ -226,7 +252,11 @@ export function ChaosLabPanel() {
           )}
 
           <div>
-            <label htmlFor="chaos-dur-sec" className="block text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+            <label
+              htmlFor="chaos-dur-sec"
+              className="block text-[11px]"
+              style={{ color: 'var(--sl-text-secondary)' }}
+            >
               Duration (s)
             </label>
             <input
@@ -248,7 +278,10 @@ export function ChaosLabPanel() {
         </div>
 
         <div className="flex items-center justify-between pt-1">
-          <label className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--sl-text-secondary)' }}>
+          <label
+            className="flex items-center gap-1.5 text-[11px]"
+            style={{ color: 'var(--sl-text-secondary)' }}
+          >
             <input
               type="checkbox"
               checked={permanent}
@@ -271,7 +304,7 @@ export function ChaosLabPanel() {
                 )
               }
               className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
-              style={{ backgroundColor: 'var(--sl-accent-danger)' }}
+              style={{ backgroundColor: 'var(--sl-btn-danger-bg)' }}
             >
               <Zap className="h-3.5 w-3.5" />
               Inject Live Fault
@@ -291,7 +324,7 @@ export function ChaosLabPanel() {
                 })
               }
               className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
-              style={{ backgroundColor: 'var(--sl-accent-traffic)' }}
+              style={{ backgroundColor: 'var(--sl-btn-primary-bg)' }}
             >
               <Plus className="h-3.5 w-3.5" />
               Add to Timeline
@@ -314,7 +347,10 @@ export function ChaosLabPanel() {
             <span className="font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
               Virtual Fault Timeline (0s – {(horizonMs / 1000).toFixed(0)}s)
             </span>
-            <span className="font-mono-tabular text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+            <span
+              className="font-mono-tabular text-[11px]"
+              style={{ color: 'var(--sl-text-muted)' }}
+            >
               Cursor: {formatVirtualClock(snapshot?.virtualTimeMs ?? 0)}
             </span>
           </div>
@@ -375,7 +411,8 @@ export function ChaosLabPanel() {
             {activeFaults.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-2 text-xs">
                 <span className="font-mono-tabular">
-                  {f.type} → <strong>{f.targetId}</strong> (since {formatVirtualClock(f.activatedAtMs)})
+                  {f.type} → <strong>{f.targetId}</strong> (since{' '}
+                  {formatVirtualClock(f.activatedAtMs)})
                 </span>
                 <button
                   type="button"
@@ -424,7 +461,9 @@ export function ChaosLabPanel() {
                       {f.type}
                     </span>{' '}
                     on <strong>{f.targetId}</strong> @ {(f.startAtMs / 1000).toFixed(1)}s ·{' '}
-                    {f.durationMs === null ? 'until recovered' : `for ${(f.durationMs / 1000).toFixed(1)}s`}
+                    {f.durationMs === null
+                      ? 'until recovered'
+                      : `for ${(f.durationMs / 1000).toFixed(1)}s`}
                   </div>
                   <button
                     type="button"

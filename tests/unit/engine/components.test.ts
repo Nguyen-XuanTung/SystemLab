@@ -62,8 +62,22 @@ describe('Component Library Behavioral Models', () => {
       ],
       edges: [
         { id: 'e-gw', source: 'client', target: 'gw', latencyMs: 1, routeType: 'default' },
-        { id: 'e-read', source: 'gw', target: 'rr', latencyMs: 2, routeType: 'read', label: 'READ' },
-        { id: 'e-write', source: 'gw', target: 'db', latencyMs: 2, routeType: 'write', label: 'WRITE' },
+        {
+          id: 'e-read',
+          source: 'gw',
+          target: 'rr',
+          latencyMs: 2,
+          routeType: 'read',
+          label: 'READ',
+        },
+        {
+          id: 'e-write',
+          source: 'gw',
+          target: 'db',
+          latencyMs: 2,
+          routeType: 'write',
+          label: 'WRITE',
+        },
       ],
     };
 
@@ -335,7 +349,11 @@ describe('Component Library Behavioral Models', () => {
       },
     ];
 
-    const snap = new SimulationEngine(graph, { seed: 1, durationMs: 4500 }, faults).runToCompletion();
+    const snap = new SimulationEngine(
+      graph,
+      { seed: 1, durationMs: 4500 },
+      faults,
+    ).runToCompletion();
     const events = snap.eventLog.map((e) => e.type);
 
     expect(events).toContain('CIRCUIT_OPENED');
@@ -426,16 +444,25 @@ describe('Component Library Behavioral Models', () => {
       edges: [{ id: 'e1', source: 'c', target: 's', latencyMs: 1, routeType: 'default' }],
     });
 
-    const burstSnap = new SimulationEngine(makeClientGraph('bursty'), { seed: 1, durationMs: 6000 }).runToCompletion();
+    const burstSnap = new SimulationEngine(makeClientGraph('bursty'), {
+      seed: 1,
+      durationMs: 6000,
+    }).runToCompletion();
     // Base 10 RPS * 4s + Burst 30 RPS * 2s = ~100 requests
     expect(burstSnap.global.generated).toBeGreaterThan(85);
 
-    const rampSnap = new SimulationEngine(makeClientGraph('ramp'), { seed: 1, durationMs: 6000 }).runToCompletion();
+    const rampSnap = new SimulationEngine(makeClientGraph('ramp'), {
+      seed: 1,
+      durationMs: 6000,
+    }).runToCompletion();
     // Average ramp rate ~0.625 * 10 = ~38 requests over 6s
     expect(rampSnap.global.generated).toBeGreaterThan(25);
     expect(rampSnap.global.generated).toBeLessThan(55);
 
-    const stepSnap = new SimulationEngine(makeClientGraph('step'), { seed: 1, durationMs: 6000 }).runToCompletion();
+    const stepSnap = new SimulationEngine(makeClientGraph('step'), {
+      seed: 1,
+      durationMs: 6000,
+    }).runToCompletion();
     // 10 RPS for 3s (30) + 30 RPS for 3s (90) = ~120
     expect(stepSnap.global.generated).toBeGreaterThan(105);
   });
@@ -502,7 +529,14 @@ describe('Component Library Behavioral Models', () => {
     };
 
     const snap = new SimulationEngine(lbGraph, { seed: 5, durationMs: 2000 }, [
-      { id: 'f-db', type: 'node_failure', targetId: 'db', startAtMs: 500, durationMs: 500, value: 1 },
+      {
+        id: 'f-db',
+        type: 'node_failure',
+        targetId: 'db',
+        startAtMs: 500,
+        durationMs: 500,
+        value: 1,
+      },
     ]).runToCompletion();
     expect(snap.global.generated).toBe(40);
     expect(snap.nodeMetrics.cache!.cacheHits).toBeGreaterThan(0);
@@ -580,7 +614,12 @@ describe('Component Library Behavioral Models', () => {
         {
           id: 'mq',
           label: 'Tiny MQ',
-          config: { type: 'message_queue', queueCapacity: 5, enqueueLatencyMs: 2, deliveryMode: 'async_ack' },
+          config: {
+            type: 'message_queue',
+            queueCapacity: 5,
+            enqueueLatencyMs: 2,
+            deliveryMode: 'async_ack',
+          },
         },
         {
           id: 'w',
@@ -600,7 +639,10 @@ describe('Component Library Behavioral Models', () => {
         { id: 'e2', source: 'mq', target: 'w', latencyMs: 1, routeType: 'default' },
       ],
     };
-    const mqOverflowSnap = new SimulationEngine(mqOverflowGraph, { seed: 4, durationMs: 2000 }).runToCompletion();
+    const mqOverflowSnap = new SimulationEngine(mqOverflowGraph, {
+      seed: 4,
+      durationMs: 2000,
+    }).runToCompletion();
     expect(mqOverflowSnap.nodeMetrics.mq!.droppedRequests).toBeGreaterThan(50);
 
     // sync_wait worker crash mid-job fails linked request & stops cleanly when drainOnEnd is false
@@ -610,7 +652,12 @@ describe('Component Library Behavioral Models', () => {
         {
           id: 'mq',
           label: 'Sync MQ',
-          config: { type: 'message_queue', queueCapacity: 50, enqueueLatencyMs: 2, deliveryMode: 'sync_wait' },
+          config: {
+            type: 'message_queue',
+            queueCapacity: 50,
+            enqueueLatencyMs: 2,
+            deliveryMode: 'sync_wait',
+          },
         },
         {
           id: 'w',
@@ -630,7 +677,16 @@ describe('Component Library Behavioral Models', () => {
     const syncEngine = new SimulationEngine(
       syncCrashGraph,
       { seed: 2, durationMs: 1000, drainOnEnd: false },
-      [{ id: 'w-crash', type: 'node_failure', targetId: 'w', startAtMs: 200, durationMs: 400, value: 1 }],
+      [
+        {
+          id: 'w-crash',
+          type: 'node_failure',
+          targetId: 'w',
+          startAtMs: 200,
+          durationMs: 400,
+          value: 1,
+        },
+      ],
     );
     while (syncEngine.step()) {
       // step event-by-event

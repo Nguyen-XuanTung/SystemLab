@@ -13,18 +13,16 @@ export function EventLogPanel() {
   const filteredEvents = useMemo(() => {
     if (!snapshot) return [];
     const q = search.trim().toLowerCase();
-    return [...snapshot.eventLog]
-      .reverse()
-      .filter((entry) => {
-        if (severity !== 'all' && entry.severity !== severity) return false;
-        if (!q) return true;
-        return (
-          entry.message.toLowerCase().includes(q) ||
-          entry.type.toLowerCase().includes(q) ||
-          entry.nodeId.toLowerCase().includes(q) ||
-          (entry.requestId ?? '').toLowerCase().includes(q)
-        );
-      });
+    return [...snapshot.eventLog].reverse().filter((entry) => {
+      if (severity !== 'all' && entry.severity !== severity) return false;
+      if (!q) return true;
+      return (
+        entry.message.toLowerCase().includes(q) ||
+        entry.type.toLowerCase().includes(q) ||
+        entry.nodeId.toLowerCase().includes(q) ||
+        (entry.requestId ?? '').toLowerCase().includes(q)
+      );
+    });
   }, [search, severity, snapshot]);
 
   const traceIdSet = useMemo(() => {
@@ -125,11 +123,17 @@ export function EventLogPanel() {
                     <td className="px-2.5 py-1.5 font-mono-tabular">
                       {formatVirtualClock(ev.timestampMs)}
                     </td>
-                    <td className="px-2 py-1.5 font-mono-tabular uppercase" style={{ color: levelColor }}>
+                    <td
+                      className="px-2 py-1.5 font-mono-tabular uppercase"
+                      style={{ color: levelColor }}
+                    >
                       {ev.severity}
                     </td>
                     <td className="px-2 py-1.5 font-mono-tabular">{ev.type}</td>
-                    <td className="px-2 py-1.5 font-mono-tabular" style={{ color: 'var(--sl-text-secondary)' }}>
+                    <td
+                      className="px-2 py-1.5 font-mono-tabular"
+                      style={{ color: 'var(--sl-text-secondary)' }}
+                    >
                       {ev.nodeId}
                     </td>
                     <td className="px-2 py-1.5" style={{ color: 'var(--sl-text-primary)' }}>
@@ -149,7 +153,10 @@ export function EventLogPanel() {
                           <Eye className="h-3 w-3" /> {ev.requestId}
                         </button>
                       ) : (
-                        <span className="font-mono-tabular" style={{ color: 'var(--sl-text-muted)' }}>
+                        <span
+                          className="font-mono-tabular"
+                          style={{ color: 'var(--sl-text-muted)' }}
+                        >
                           {ev.requestId ?? '—'}
                         </span>
                       )}

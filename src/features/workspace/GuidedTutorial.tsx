@@ -79,7 +79,10 @@ export function GuidedTutorial() {
       }}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[11px] font-mono-tabular" style={{ color: 'var(--sl-accent-traffic)' }}>
+        <div
+          className="text-[11px] font-mono-tabular"
+          style={{ color: 'var(--sl-accent-traffic)' }}
+        >
           Quick-Start Walkthrough ({tutorialStep + 1}/{STEPS.length})
         </div>
         <button
@@ -93,9 +96,14 @@ export function GuidedTutorial() {
         </button>
       </div>
 
-      <h3 className="mt-1 flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
+      <h3
+        className="mt-1 flex items-center gap-1.5 text-xs font-semibold"
+        style={{ color: 'var(--sl-text-primary)' }}
+      >
         {stepMeta.title}
-        {stepDone && <CheckCircle2 className="h-3.5 w-3.5" style={{ color: 'var(--sl-accent-success)' }} />}
+        {stepDone && (
+          <CheckCircle2 className="h-3.5 w-3.5" style={{ color: 'var(--sl-accent-success)' }} />
+        )}
       </h3>
       <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
         {stepMeta.body}
@@ -106,7 +114,7 @@ export function GuidedTutorial() {
           type="button"
           onClick={handleStepAction}
           className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-semibold text-white"
-          style={{ backgroundColor: 'var(--sl-accent-traffic)' }}
+          style={{ backgroundColor: 'var(--sl-btn-primary-bg)' }}
         >
           {stepMeta.actionLabel}
           <ArrowRight className="h-3 w-3" />

@@ -14,9 +14,7 @@ export class VirtualClock {
       throw new Error(`Invalid virtual timestamp: ${timestampMs}`);
     }
     if (timestampMs + 1e-9 < this.currentMs) {
-      throw new Error(
-        `Non-monotonic virtual clock transition: ${timestampMs} < ${this.currentMs}`,
-      );
+      throw new Error(`Non-monotonic virtual clock transition: ${timestampMs} < ${this.currentMs}`);
     }
     if (timestampMs > this.currentMs) {
       this.currentMs = timestampMs;

@@ -41,7 +41,10 @@ export function ComponentPalette() {
     }).filter((g) => g.items.length > 0);
   }, [query]);
 
-  const handleDragStart = (event: React.DragEvent<HTMLButtonElement>, type: ComponentType): void => {
+  const handleDragStart = (
+    event: React.DragEvent<HTMLButtonElement>,
+    type: ComponentType,
+  ): void => {
     if (locked) {
       event.preventDefault();
       return;
@@ -59,12 +62,12 @@ export function ComponentPalette() {
         borderColor: 'var(--sl-border-subtle)',
       }}
     >
-      <div
-        className="border-b px-3 py-2.5"
-        style={{ borderColor: 'var(--sl-border-subtle)' }}
-      >
+      <div className="border-b px-3 py-2.5" style={{ borderColor: 'var(--sl-border-subtle)' }}>
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold tracking-wide" style={{ color: 'var(--sl-text-primary)' }}>
+          <h2
+            className="text-xs font-semibold tracking-wide"
+            style={{ color: 'var(--sl-text-primary)' }}
+          >
             Components
           </h2>
           <span className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
@@ -103,7 +106,7 @@ export function ComponentPalette() {
             color: 'var(--sl-accent-warning)',
           }}
         >
-          Pause &amp; Reset simulation to add components.
+          Stop or Reset simulation to add components.
         </div>
       )}
 

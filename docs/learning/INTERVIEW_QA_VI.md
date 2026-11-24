@@ -117,7 +117,7 @@ Khi HTTP request tới `message_queue`, nhánh HTTP xem như ack thành công �
 ### Q26. Mô hình hàng đợi trong SystemLab thuộc loại nào?
 Là mô hình đa server có giới hạn hàng đợi **G/G/c/K**:
 - $G$ (General arrival): phân phối thời gian đến tùy chọn (Poisson/exponential, constant...).
-- $G$ (General service): phân phối thời gian xử lý (`exponential`, `normal`, `uniform`, `constant`).
+- $G$ (General service): phân phối thời gian xử lý (`fixed`, `exponential`, `lognormal`).
 - $c$: `concurrency` (số request xử lý song song tại node).
 - $K$: `queueCapacity` (số chỗ chờ tối đa trước khi bị reject vì tràn queue).
 

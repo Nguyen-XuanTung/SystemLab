@@ -1,10 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SimulationEngine } from '@/engine/core/engine';
+import { db } from '@/features/persistence/db';
 import {
   clearAllLocalData,
+  clearMemoryFallbackForTests,
   deleteExperiment,
   deleteProject,
   getProject,
+  getStorageWarning,
   listExperiments,
   listProjects,
   loadPreferences,
@@ -13,7 +16,10 @@ import {
   saveProject,
 } from '@/features/persistence/repository';
 import { BUILT_IN_SCENARIOS } from '@/features/scenarios/scenarios';
-import { buildExperimentRecordFromSnapshot, safeParseExperimentJson } from '@/schemas/projectSchema';
+import {
+  buildExperimentRecordFromSnapshot,
+  safeParseExperimentJson,
+} from '@/schemas/projectSchema';
 
 describe('IndexedDB Persistence & Experiment Round-Trip', () => {
   beforeEach(async () => {
@@ -40,7 +46,10 @@ describe('IndexedDB Persistence & Experiment Round-Trip', () => {
       nodes: proj.nodes.map((n) => ({ id: n.id, label: n.label, config: n.config })),
       edges: proj.edges,
     };
-    const snap = new SimulationEngine(graph, { ...proj.simConfig, durationMs: 3000 }).runToCompletion();
+    const snap = new SimulationEngine(graph, {
+      ...proj.simConfig,
+      durationMs: 3000,
+    }).runToCompletion();
     const record = buildExperimentRecordFromSnapshot({
       id: 'exp-1',
       name: 'Baseline Horizontal',
@@ -77,5 +86,27 @@ describe('IndexedDB Persistence & Experiment Round-Trip', () => {
       snapToGrid: false,
       tutorialDismissed: true,
     });
+  });
+
+  it('degrades transparently to in-memory storage and surfaces storage warning when IndexedDB throws', async () => {
+    clearMemoryFallbackForTests();
+    const putSpy = vi.spyOn(db.projects, 'put').mockRejectedValue(new Error('IndexedDB blocked'));
+    const orderSpy = vi.spyOn(db.projects, 'orderBy').mockImplementation(() => {
+      throw new Error('IndexedDB blocked');
+    });
+
+    try {
+      const proj = BUILT_IN_SCENARIOS[0]!.createProject();
+      await saveProject(proj);
+      expect(getStorageWarning()).toContain('IndexedDB blocked');
+
+      const listed = await listProjects();
+      expect(listed).toHaveLength(1);
+      expect(listed[0]?.id).toBe(proj.id);
+    } finally {
+      putSpy.mockRestore();
+      orderSpy.mockRestore();
+      clearMemoryFallbackForTests();
+    }
   });
 });

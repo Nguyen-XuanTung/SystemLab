@@ -1,3 +1,15 @@
+import type { ComponentType } from '@/engine/models/types';
+
+export function hasCapacityPool(type: ComponentType): boolean {
+  return (
+    type === 'app_server' ||
+    type === 'database' ||
+    type === 'read_replica' ||
+    type === 'worker' ||
+    type === 'message_queue'
+  );
+}
+
 export function cn(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(' ');
 }

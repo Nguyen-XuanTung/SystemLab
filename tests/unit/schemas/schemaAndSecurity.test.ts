@@ -64,7 +64,15 @@ describe('Schema Validation & Import Security', () => {
     const dangling = safeParseProjectJson(
       JSON.stringify({
         ...proj,
-        edges: [{ id: 'bad', source: 'client-1', target: 'nonexistent', latencyMs: 1, routeType: 'default' }],
+        edges: [
+          {
+            id: 'bad',
+            source: 'client-1',
+            target: 'nonexistent',
+            latencyMs: 1,
+            routeType: 'default',
+          },
+        ],
       }),
     );
     expect(dangling.ok).toBe(false);
@@ -85,5 +93,53 @@ describe('Schema Validation & Import Security', () => {
   it('rejects malformed experiment JSON imports cleanly', () => {
     expect(safeParseExperimentJson('{bad').ok).toBe(false);
     expect(safeParseExperimentJson('{"schemaVersion":1}').ok).toBe(false);
+  });
+
+  it('rejects excessively nested JSON payloads beyond recursion depth limit and invalid nodeMetrics', () => {
+    const deep = '{"a":'.repeat(80) + '1' + '}'.repeat(80);
+    const deepProj = safeParseProjectJson(deep);
+    expect(deepProj.ok).toBe(false);
+    expect(deepProj.error).toContain('nesting depth');
+
+    const deepExp = safeParseExperimentJson(deep);
+    expect(deepExp.ok).toBe(false);
+    expect(deepExp.error).toContain('nesting depth');
+
+    const validExp = {
+      schemaVersion: SCHEMA_VERSION,
+      id: 'exp-1',
+      name: 'Exp 1',
+      projectId: 'proj-1',
+      projectName: 'Proj 1',
+      engineVersion: '1.0.0',
+      seed: 42,
+      durationMs: 1000,
+      drainOnEnd: true,
+      graphSnapshot: { nodes: [], edges: [] },
+      faultTimeline: [],
+      summaryMetrics: {
+        virtualTimeMs: 1000,
+        generated: 0,
+        succeeded: 0,
+        failed: 0,
+        timedOut: 0,
+        inFlight: 0,
+        throughputRps: 0,
+        errorRate: null,
+        meanLatencyMs: null,
+        p50LatencyMs: null,
+        p95LatencyMs: null,
+        p99LatencyMs: null,
+        processedEvents: 0,
+        sampleCount: 0,
+      },
+      nodeMetrics: {
+        badNode: { invalidField: 'corrupt' },
+      },
+      timeSeries: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const invalidMetricsRes = safeParseExperimentJson(JSON.stringify(validExp));
+    expect(invalidMetricsRes.ok).toBe(false);
   });
 });

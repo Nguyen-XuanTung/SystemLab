@@ -41,9 +41,9 @@ function makeSimpleGraph(ratePerSecond = 50, serviceTimeMs = 100): ArchitectureG
 
 describe('Engine Safety Limits & Error Guardrails', () => {
   it('throws GraphValidationError when constructed with an invalid topology', () => {
-    expect(() => new SimulationEngine({ nodes: [], edges: [] }, { seed: 1, durationMs: 1000 })).toThrow(
-      GraphValidationError,
-    );
+    expect(
+      () => new SimulationEngine({ nodes: [], edges: [] }, { seed: 1, durationMs: 1000 }),
+    ).toThrow(GraphValidationError);
   });
 
   it('halts cleanly when maxEvents safety ceiling is exceeded', () => {
@@ -149,7 +149,12 @@ describe('Engine Safety Limits & Error Guardrails', () => {
         {
           id: 'lb',
           label: 'LB',
-          config: { type: 'load_balancer', strategy: 'round_robin', processingLatencyMs: 1, healthCheckEnabled: true },
+          config: {
+            type: 'load_balancer',
+            strategy: 'round_robin',
+            processingLatencyMs: 1,
+            healthCheckEnabled: true,
+          },
         },
         {
           id: 'gw',

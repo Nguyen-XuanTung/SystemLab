@@ -1,6 +1,12 @@
 import { VirtualClock } from './clock';
 import { MinHeap } from './minHeap';
-import { compareSimEvents, EVENT_PRIORITY, type SimEvent, type SimEventPayload, type SimulationEventType } from '../events/types';
+import {
+  compareSimEvents,
+  EVENT_PRIORITY,
+  type SimEvent,
+  type SimEventPayload,
+  type SimulationEventType,
+} from '../events/types';
 import { MetricsCollector, type NodeMetricInput } from '../metrics/collector';
 import {
   DEFAULT_SAFETY_LIMITS,
@@ -85,6 +91,12 @@ interface QueuedLocation {
   nodeId: string;
 }
 
+interface RequestCbContext {
+  cbId: string;
+  cbEpoch: number;
+  isHalfOpenProbe: boolean;
+}
+
 export interface RunSliceResult {
   processedEvents: number;
   virtualTimeMs: number;
@@ -109,7 +121,7 @@ export class SimulationEngine {
   private readonly requests = new Map<string, LogicalRequest>();
   private readonly queuedLocation = new Map<string, QueuedLocation>();
   private readonly requestParentAppNode = new Map<string, string>();
-  private readonly requestLastCbError = new Set<string>();
+  private readonly requestCbContexts = new Map<string, RequestCbContext[]>();
 
   private eventSeq = 0;
   private requestSeq = 0;
@@ -208,7 +220,10 @@ export class SimulationEngine {
     // Schedule Chaos Lab faults
     for (const fault of this.faultManager.getFaultTimeline()) {
       const startMs = Math.max(0, fault.startAtMs);
-      if (startMs <= this.config.durationMs + (this.config.drainOnEnd ? this.config.maxDrainMs : 0)) {
+      if (
+        startMs <=
+        this.config.durationMs + (this.config.drainOnEnd ? this.config.maxDrainMs : 0)
+      ) {
         this.scheduleEvent(startMs, 'FAULT_ACTIVATED', fault.targetId, {
           faultId: fault.id,
         });
@@ -547,7 +562,10 @@ export class SimulationEngine {
     this.collector.recordTimeSeriesBucket(ev.timestampMs, this.collectNodeInputs());
     const nextTick = ev.timestampMs + this.collector.bucketMs;
     // Keep ticking through durationMs or while requests remain in flight during drain
-    if (nextTick <= this.config.durationMs || (this.config.drainOnEnd && this.collector.getInFlightCount() > 0)) {
+    if (
+      nextTick <= this.config.durationMs ||
+      (this.config.drainOnEnd && this.collector.getInFlightCount() > 0)
+    ) {
       this.scheduleNextMetricsTick(nextTick);
     }
   }
@@ -623,7 +641,7 @@ export class SimulationEngine {
       this.finalizeRequest(request, 'failed', 'CLIENT_FAILED', ev.timestampMs, rt.node.id);
     } else {
       const out = this.outgoingEdges.get(rt.node.id) ?? [];
-      const edge = out[0];
+      const edge = this.pickRoutingEdge(out, request.method, false) ?? out[0];
       if (!edge) {
         this.finalizeRequest(request, 'failed', 'NO_DOWNSTREAM', ev.timestampMs, rt.node.id);
       } else {
@@ -658,17 +676,20 @@ export class SimulationEngine {
 
     if (this.faultManager.isEdgeFailed(edge.id)) {
       this.collector.recordEdgeTraffic(edge.id, true, false);
-      this.handleDownstreamFailure(request, edge.source, 'EDGE_FAILED', nowMs);
+      this.handleDownstreamFailure(request, edge.source, 'EDGE_FAILED', this.clock.nowMs);
       return;
     }
 
     request.hopCount += 1;
     if (request.hopCount > this.config.safetyLimits.maxHops) {
-      this.finalizeRequest(request, 'failed', 'MAX_HOPS_EXCEEDED', nowMs, edge.source);
+      this.finalizeRequest(request, 'failed', 'MAX_HOPS_EXCEEDED', this.clock.nowMs, edge.source);
       return;
     }
 
-    const edgeDelay = Math.max(0, edge.latencyMs + this.faultManager.getEdgeLatencyDeltaMs(edge.id));
+    const edgeDelay = Math.max(
+      0,
+      edge.latencyMs + this.faultManager.getEdgeLatencyDeltaMs(edge.id),
+    );
     this.collector.recordEdgeTraffic(edge.id, false, false);
     this.scheduleEvent(nowMs + edgeDelay, 'REQUEST_ARRIVED', edge.target, {
       requestId: request.id,
@@ -715,7 +736,7 @@ export class SimulationEngine {
         this.processCircuitBreaker(rt, request, nowMs);
         break;
       case 'cache':
-        this.processCache(rt, request, nowMs);
+        this.processCache(rt, request, nowMs, ev.payload.edgeId);
         break;
       case 'app_server':
       case 'database':
@@ -819,7 +840,11 @@ export class SimulationEngine {
     }
 
     const edges = this.outgoingEdges.get(rt.node.id) ?? [];
-    const chosenEdge = this.pickRoutingEdge(edges, request.method, cfg.routingMode === 'read_write_split');
+    const chosenEdge = this.pickRoutingEdge(
+      edges,
+      request.method,
+      cfg.routingMode === 'read_write_split',
+    );
     if (!chosenEdge) {
       this.collector.recordDrop(rt.node.id);
       this.recordFailHop(request, rt.node, nowMs, 0, 0, 'NO_ROUTING_TARGET');
@@ -870,36 +895,41 @@ export class SimulationEngine {
 
     if (rt.circuitState === 'open') {
       this.collector.recordCircuitRejection(rt.node.id);
-      this.requestLastCbError.add(request.id);
       this.recordFailHop(request, rt.node, nowMs, 0, 0, 'CIRCUIT_OPEN');
-      this.finalizeRequest(request, 'failed', 'CIRCUIT_OPEN', nowMs, rt.node.id);
+      this.finalizeRequest(request, 'failed', 'CIRCUIT_OPEN', nowMs, rt.node.id, rt.node.id);
       return;
     }
 
+    let isHalfOpenProbe = false;
     if (rt.circuitState === 'half_open') {
       if (rt.cbHalfOpenInFlight >= cfg.halfOpenMaxProbes) {
         this.collector.recordCircuitRejection(rt.node.id);
-        this.requestLastCbError.add(request.id);
         this.recordFailHop(request, rt.node, nowMs, 0, 0, 'CIRCUIT_OPEN');
-        this.finalizeRequest(request, 'failed', 'CIRCUIT_OPEN', nowMs, rt.node.id);
+        this.finalizeRequest(request, 'failed', 'CIRCUIT_OPEN', nowMs, rt.node.id, rt.node.id);
         return;
       }
       rt.cbHalfOpenInFlight += 1;
+      isHalfOpenProbe = true;
     }
 
     const edges = this.outgoingEdges.get(rt.node.id) ?? [];
     const chosenEdge = this.pickRoutingEdge(edges, request.method, false);
     if (!chosenEdge) {
-      if (rt.circuitState === 'half_open') {
+      if (isHalfOpenProbe) {
         rt.cbHalfOpenInFlight = Math.max(0, rt.cbHalfOpenInFlight - 1);
       }
       this.collector.recordDrop(rt.node.id);
-      this.finalizeRequest(request, 'failed', 'NO_DOWNSTREAM', nowMs, rt.node.id);
+      this.finalizeRequest(request, 'failed', 'NO_DOWNSTREAM', nowMs, rt.node.id, rt.node.id);
       return;
     }
 
     if (!request.circuitBreakerIds.includes(rt.node.id)) {
       request.circuitBreakerIds.push(rt.node.id);
+    }
+    const cbContexts = this.requestCbContexts.get(request.id) ?? [];
+    if (!cbContexts.some((c) => c.cbId === rt.node.id)) {
+      cbContexts.push({ cbId: rt.node.id, cbEpoch: rt.cbEpoch, isHalfOpenProbe });
+      this.requestCbContexts.set(request.id, cbContexts);
     }
 
     const procMs = cfg.processingLatencyMs + this.faultManager.getNodeLatencyDeltaMs(rt.node.id);
@@ -941,38 +971,47 @@ export class SimulationEngine {
     this.transitionCircuitHalfOpen(rt, ev.timestampMs);
   }
 
-  private notifyCircuitBreakers(request: LogicalRequest, succeeded: boolean, nowMs: number): void {
-    if (request.isBackgroundJob || this.requestLastCbError.has(request.id)) {
-      this.requestLastCbError.delete(request.id);
+  private notifyCircuitBreakers(
+    request: LogicalRequest,
+    succeeded: boolean,
+    nowMs: number,
+    excludeCbId?: string,
+  ): void {
+    const cbContexts = this.requestCbContexts.get(request.id);
+    this.requestCbContexts.delete(request.id);
+    if (request.isBackgroundJob || !cbContexts || cbContexts.length === 0) {
       return;
     }
 
-    for (const cbId of request.circuitBreakerIds) {
-      const rt = this.nodeRuntimes.get(cbId);
+    for (const ctx of cbContexts) {
+      if (ctx.cbId === excludeCbId) continue;
+      const rt = this.nodeRuntimes.get(ctx.cbId);
       if (!rt || rt.node.config.type !== 'circuit_breaker') continue;
+      if (ctx.cbEpoch !== rt.cbEpoch) continue;
       const cfg = rt.node.config;
 
       if (succeeded) {
         if (rt.circuitState === 'closed') {
           rt.cbConsecutiveFailures = 0;
-        } else if (rt.circuitState === 'half_open') {
+        } else if (rt.circuitState === 'half_open' && ctx.isHalfOpenProbe) {
           rt.cbHalfOpenInFlight = Math.max(0, rt.cbHalfOpenInFlight - 1);
           rt.cbHalfOpenSuccesses += 1;
           if (rt.cbHalfOpenSuccesses >= cfg.halfOpenMaxProbes) {
             rt.circuitState = 'closed';
             rt.cbConsecutiveFailures = 0;
+            rt.cbEpoch += 1;
             this.collector.logEvent(
               nowMs,
               'info',
               'CIRCUIT_CLOSED',
-              cbId,
+              ctx.cbId,
               `${rt.node.label} probe succeeded; circuit CLOSED.`,
               request.id,
             );
           }
         }
       } else {
-        if (rt.circuitState === 'half_open') {
+        if (rt.circuitState === 'half_open' && ctx.isHalfOpenProbe) {
           rt.cbHalfOpenInFlight = Math.max(0, rt.cbHalfOpenInFlight - 1);
           this.tripCircuitOpen(rt, cfg.openDurationMs, nowMs, request.id);
         } else if (rt.circuitState === 'closed') {
@@ -1007,7 +1046,12 @@ export class SimulationEngine {
     });
   }
 
-  private processCache(rt: NodeRuntime, request: LogicalRequest, nowMs: number): void {
+  private processCache(
+    rt: NodeRuntime,
+    request: LogicalRequest,
+    nowMs: number,
+    incomingEdgeId?: string,
+  ): void {
     if (rt.node.config.type !== 'cache') return;
     const cfg = rt.node.config;
     const lookupMs = cfg.lookupLatencyMs + this.faultManager.getNodeLatencyDeltaMs(rt.node.id);
@@ -1035,17 +1079,18 @@ export class SimulationEngine {
           outcome: 'cache_hit',
         });
 
-        // Mark incoming edge cache hit pulse for telemetry clarity
-        const inEdges = this.incomingEdges.get(rt.node.id) ?? [];
-        if (inEdges[0]) {
-          this.collector.recordEdgeTraffic(inEdges[0].id, false, true);
+        // Mark incoming edge cache hit pulse without double-counting edge traffic count
+        if (incomingEdgeId) {
+          this.collector.recordEdgeCacheHit(incomingEdgeId);
         }
 
         if (lookupMs === 0) {
           this.finalizeRequest(request, 'succeeded', null, nowMs, rt.node.id);
         } else {
+          rt.activeRequestIds.add(request.id);
           this.scheduleEvent(nowMs + lookupMs, 'REQUEST_SUCCEEDED', rt.node.id, {
             requestId: request.id,
+            nodeEpoch: rt.nodeEpoch,
           });
         }
         return;
@@ -1058,8 +1103,8 @@ export class SimulationEngine {
       const originEdge = this.pickRoutingEdge(edges, request.method, false);
       if (!originEdge) {
         this.collector.recordDrop(rt.node.id);
-        this.recordFailHop(request, rt.node, nowMs, 0, lookupMs, 'CACHE_ORIGIN_MISSING');
-        this.handleDownstreamFailure(request, rt.node.id, 'CACHE_ORIGIN_MISSING', nowMs + lookupMs);
+        this.recordFailHop(request, rt.node, nowMs, 0, 0, 'CACHE_ORIGIN_MISSING');
+        this.handleDownstreamFailure(request, rt.node.id, 'CACHE_ORIGIN_MISSING', nowMs);
         return;
       }
 
@@ -1083,8 +1128,8 @@ export class SimulationEngine {
     const originEdge = this.pickRoutingEdge(edges, request.method, false);
     if (!originEdge) {
       this.collector.recordDrop(rt.node.id);
-      this.recordFailHop(request, rt.node, nowMs, 0, delayMs, 'CACHE_ORIGIN_MISSING');
-      this.handleDownstreamFailure(request, rt.node.id, 'CACHE_ORIGIN_MISSING', nowMs + delayMs);
+      this.recordFailHop(request, rt.node, nowMs, 0, 0, 'CACHE_ORIGIN_MISSING');
+      this.handleDownstreamFailure(request, rt.node.id, 'CACHE_ORIGIN_MISSING', nowMs);
       return;
     }
     this.collector.recordServiceCompletion(rt.node.id, 0, delayMs);
@@ -1105,6 +1150,12 @@ export class SimulationEngine {
   private handleScheduledRequestSucceeded(ev: SimEvent): void {
     const reqId = ev.payload.requestId;
     if (!reqId) return;
+    const rt = this.nodeRuntimes.get(ev.nodeId);
+    if (rt) {
+      if ((ev.payload.nodeEpoch ?? 0) !== rt.nodeEpoch) return;
+      rt.activeRequestIds.delete(reqId);
+    }
+    if (this.faultManager.isNodeFailed(ev.nodeId)) return;
     const request = this.requests.get(reqId);
     if (!request || request.terminalState !== null) return;
     this.finalizeRequest(request, 'succeeded', null, ev.timestampMs, ev.nodeId);
@@ -1290,6 +1341,15 @@ export class SimulationEngine {
 
     // Always free worker slot to start next queued request even if previous request timed out
     this.drainNextFromQueue(rt, nowMs);
+
+    if (rt.node.config.type === 'worker') {
+      for (const inEdge of this.incomingEdges.get(rt.node.id) ?? []) {
+        const mqRt = this.nodeRuntimes.get(inEdge.source);
+        if (mqRt && mqRt.node.config.type === 'message_queue' && mqRt.mqJobs.length > 0) {
+          this.dispatchJobsFromMq(mqRt, nowMs);
+        }
+      }
+    }
   }
 
   private drainNextFromQueue(rt: NodeRuntime, nowMs: number): void {
@@ -1368,12 +1428,9 @@ export class SimulationEngine {
             `${appRt.node.label} retrying ${request.id} (${attempted + 1}/${appRt.node.config.maxRetries}) after ${reason}.`,
             request.id,
           );
-          this.scheduleEvent(
-            nowMs + appRt.node.config.retryDelayMs,
-            'RETRY_SCHEDULED',
-            appId,
-            { requestId: request.id },
-          );
+          this.scheduleEvent(nowMs + appRt.node.config.retryDelayMs, 'RETRY_SCHEDULED', appId, {
+            requestId: request.id,
+          });
           return;
         }
       }
@@ -1437,27 +1494,33 @@ export class SimulationEngine {
       note: `job=${jobId} (${cfg.deliveryMode})`,
     });
 
+    rt.activeRequestIds.add(request.id);
     this.scheduleEvent(nowMs + enqDelay, 'JOB_ENQUEUED', rt.node.id, {
       jobId,
       requestId: request.id,
+      nodeEpoch: rt.nodeEpoch,
     });
   }
 
   private handleJobEnqueued(ev: SimEvent): void {
     const rt = this.nodeRuntimes.get(ev.nodeId);
     if (!rt || rt.node.config.type !== 'message_queue') return;
+    if ((ev.payload.nodeEpoch ?? 0) !== rt.nodeEpoch) return;
     const nowMs = ev.timestampMs;
 
     rt.mqReservedSlots = Math.max(0, rt.mqReservedSlots - 1);
+    const reqId = ev.payload.requestId;
+    if (reqId) {
+      rt.activeRequestIds.delete(reqId);
+    }
     if (this.faultManager.isNodeFailed(rt.node.id)) {
-      const req = ev.payload.requestId ? this.requests.get(ev.payload.requestId) : undefined;
+      const req = reqId ? this.requests.get(reqId) : undefined;
       if (req && req.terminalState === null) {
-        this.finalizeRequest(req, 'failed', 'NODE_FAILED', nowMs, rt.node.id);
+        this.handleDownstreamFailure(req, rt.node.id, 'NODE_FAILED', nowMs);
       }
       return;
     }
 
-    const reqId = ev.payload.requestId;
     const jobId = ev.payload.jobId ?? `job-${this.jobSeq}`;
     const req = reqId ? this.requests.get(reqId) : undefined;
 
@@ -1487,9 +1550,7 @@ export class SimulationEngine {
       if (this.faultManager.isEdgeFailed(e.id)) return false;
       const target = this.nodeRuntimes.get(e.target);
       return (
-        target &&
-        target.node.config.type === 'worker' &&
-        !this.faultManager.isNodeFailed(e.target)
+        target && target.node.config.type === 'worker' && !this.faultManager.isNodeFailed(e.target)
       );
     });
 
@@ -1668,9 +1729,7 @@ export class SimulationEngine {
   private handleFaultActivated(ev: SimEvent): void {
     const faultId = ev.payload.faultId;
     if (!faultId) return;
-    const scheduled = this.faultManager
-      .getFaultTimeline()
-      .find((item) => item.id === faultId);
+    const scheduled = this.faultManager.getFaultTimeline().find((item) => item.id === faultId);
     if (!scheduled) return;
 
     const fault: ActiveFault = {
@@ -1718,7 +1777,7 @@ export class SimulationEngine {
           if (req && req.terminalState === null) {
             this.collector.recordNodeFailure(rt.node.id);
             this.recordFailHop(req, rt.node, nowMs, nowMs - item.enqueuedAtMs, 0, 'NODE_FAILED');
-            this.finalizeRequest(req, 'failed', 'NODE_FAILED', nowMs, rt.node.id);
+            this.handleDownstreamFailure(req, rt.node.id, 'NODE_FAILED', nowMs);
           }
         }
 
@@ -1735,7 +1794,23 @@ export class SimulationEngine {
               lastHop.departedAtMs = nowMs;
               lastHop.note = 'NODE_FAILED_IN_FLIGHT';
             }
-            this.finalizeRequest(req, 'failed', 'NODE_FAILED', nowMs, rt.node.id);
+            this.handleDownstreamFailure(req, rt.node.id, 'NODE_FAILED', nowMs);
+          }
+        }
+
+        // Fail queued jobs if message queue crashed
+        if (rt.node.config.type === 'message_queue') {
+          rt.mqReservedSlots = 0;
+          const queuedJobs = rt.mqJobs.splice(0);
+          for (const job of queuedJobs) {
+            this.collector.recordNodeFailure(rt.node.id);
+            this.collector.recordJobFailed(rt.node.id, '');
+            if (job.linkedRequestId) {
+              const linked = this.requests.get(job.linkedRequestId);
+              if (linked && linked.terminalState === null) {
+                this.handleDownstreamFailure(linked, rt.node.id, 'NODE_FAILED', nowMs);
+              }
+            }
           }
         }
 
@@ -1745,7 +1820,7 @@ export class SimulationEngine {
           if (job.linkedRequestId) {
             const linked = this.requests.get(job.linkedRequestId);
             if (linked && linked.terminalState === null) {
-              this.finalizeRequest(linked, 'failed', 'NODE_FAILED', nowMs, rt.node.id);
+              this.handleDownstreamFailure(linked, rt.node.id, 'NODE_FAILED', nowMs);
             }
           }
         }
@@ -1758,7 +1833,7 @@ export class SimulationEngine {
         this.collector.flushNodeUtilization(rt.node.id, nowMs, rt.activeCount, cap);
       }
     } else if (fault.type === 'traffic_spike') {
-      this.rescheduleAffectedClients(fault.targetId, nowMs);
+      this.rescheduleAffectedClients(fault.targetId, nowMs, true);
     }
   }
 
@@ -1771,10 +1846,12 @@ export class SimulationEngine {
   }
 
   private applyFaultExpiration(fault: ActiveFault, nowMs: number): void {
+    const isRecovered =
+      fault.type === 'node_failure' && !this.faultManager.isNodeFailed(fault.targetId);
     this.collector.logEvent(
       nowMs,
       'info',
-      fault.type === 'node_failure' ? 'NODE_RECOVERED' : 'FAULT_EXPIRED',
+      isRecovered ? 'NODE_RECOVERED' : 'FAULT_EXPIRED',
       fault.targetId,
       `Fault cleared: ${fault.type} on ${fault.targetId}.`,
     );
@@ -1796,18 +1873,43 @@ export class SimulationEngine {
           this.dispatchJobsFromMq(rt, nowMs);
         }
       }
+    } else if (fault.type === 'edge_failure') {
+      const edge = this.graph.edges.find((e) => e.id === fault.targetId);
+      if (edge) {
+        const sourceRt = this.nodeRuntimes.get(edge.source);
+        if (
+          sourceRt &&
+          sourceRt.node.config.type === 'message_queue' &&
+          sourceRt.mqJobs.length > 0
+        ) {
+          this.dispatchJobsFromMq(sourceRt, nowMs);
+        }
+      }
     } else if (fault.type === 'traffic_spike') {
-      this.rescheduleAffectedClients(fault.targetId, nowMs);
+      this.rescheduleAffectedClients(fault.targetId, nowMs, false);
     }
   }
 
-  private rescheduleAffectedClients(targetId: string, nowMs: number): void {
+  private rescheduleAffectedClients(targetId: string, nowMs: number, isActivation: boolean): void {
     for (const rt of this.nodeRuntimes.values()) {
       if (rt.node.config.type !== 'client') continue;
       if (targetId !== '*' && targetId !== rt.node.id) continue;
       rt.generationEpoch += 1;
-      if (nowMs < this.config.durationMs) {
-        this.scheduleEvent(nowMs, 'REQUEST_CREATED', rt.node.id, {
+      if (nowMs >= this.config.durationMs - 1e-6) continue;
+
+      const cfg = rt.node.config;
+      const rate = this.getClientEffectiveRate(rt, nowMs);
+      let nextAtMs: number;
+      if (cfg.workloadPattern === 'poisson') {
+        nextAtMs = nowMs + Math.max(0.001, this.rng.nextExponentialMs(rate));
+      } else if (isActivation) {
+        nextAtMs = nowMs;
+      } else {
+        nextAtMs = nowMs + Math.max(0.001, 1000 / rate);
+      }
+
+      if (nextAtMs < this.config.durationMs - 1e-6) {
+        this.scheduleEvent(nextAtMs, 'REQUEST_CREATED', rt.node.id, {
           nodeEpoch: rt.generationEpoch,
         });
       }
@@ -1841,6 +1943,7 @@ export class SimulationEngine {
     errorCategory: string | null,
     nowMs: number,
     nodeId: string,
+    excludeCbId?: string,
   ): void {
     if (request.terminalState !== null) return;
     request.terminalState = terminalState;
@@ -1865,7 +1968,7 @@ export class SimulationEngine {
       );
     }
 
-    this.notifyCircuitBreakers(request, terminalState === 'succeeded', nowMs);
+    this.notifyCircuitBreakers(request, terminalState === 'succeeded', nowMs, excludeCbId);
   }
 
   private computeNodeStatus(rt: NodeRuntime, effectiveCap: number): NodeRuntimeStatus {
@@ -1876,7 +1979,12 @@ export class SimulationEngine {
     const currentQueue =
       rt.node.config.type === 'message_queue' ? rt.mqJobs.length : rt.queue.length;
 
-    if (effectiveCap > 0 && rt.activeCount >= effectiveCap && queueCap > 0 && currentQueue >= queueCap * 0.8) {
+    if (
+      effectiveCap > 0 &&
+      rt.activeCount >= effectiveCap &&
+      queueCap > 0 &&
+      currentQueue >= queueCap * 0.8
+    ) {
       return 'saturated';
     }
     if (

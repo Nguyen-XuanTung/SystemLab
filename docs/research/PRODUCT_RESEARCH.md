@@ -13,7 +13,7 @@ Learning distributed systems and system design suffers from a persistent gap bet
 
 ## 2. Existing Solutions & Competitive Landscape
 
-Verified via targeted web research during M00:
+Evaluated against documented OSS tools and browser simulators:
 
 | Category | Representative Tools | Strengths | Limitations Relative to SystemLab |
 |---|---|---|---|

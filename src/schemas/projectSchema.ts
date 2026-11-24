@@ -11,24 +11,28 @@ import {
 
 export const SCHEMA_VERSION = 1;
 export const MAX_IMPORT_BYTES = 2 * 1024 * 1024; // 2 MB strict ceiling
+export const MAX_JSON_DEPTH = 64;
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 /**
  * Recursively clones plain JSON structures while stripping keys capable of
- * triggering prototype pollution.
+ * triggering prototype pollution and bounding recursion depth.
  */
-export function stripDangerousKeys<T>(input: T): T {
+export function stripDangerousKeys<T>(input: T, depth = 0): T {
+  if (depth > MAX_JSON_DEPTH) {
+    throw new Error(`JSON nesting depth exceeds safety limit (${MAX_JSON_DEPTH}).`);
+  }
   if (input === null || typeof input !== 'object') {
     return input;
   }
   if (Array.isArray(input)) {
-    return input.map((item) => stripDangerousKeys(item)) as unknown as T;
+    return input.map((item) => stripDangerousKeys(item, depth + 1)) as unknown as T;
   }
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
     if (DANGEROUS_KEYS.has(key)) continue;
-    out[key] = stripDangerousKeys(value);
+    out[key] = stripDangerousKeys(value, depth + 1);
   }
   return out as T;
 }
@@ -225,6 +229,47 @@ const ExperimentGraphNodeSchema = z.object({
   config: NodeConfigSchema,
 });
 
+const NodeMetricsSchema = z.object({
+  nodeId: z.string().min(1).max(100),
+  label: z.string().min(1).max(120),
+  type: z.enum([
+    'client',
+    'load_balancer',
+    'api_gateway',
+    'app_server',
+    'cache',
+    'database',
+    'message_queue',
+    'worker',
+    'circuit_breaker',
+    'read_replica',
+  ]),
+  status: z.enum(['healthy', 'degraded', 'saturated', 'failed', 'open']),
+  arrivals: z.number().int().min(0),
+  completions: z.number().int().min(0),
+  activeRequests: z.number().int().min(0),
+  queueDepth: z.number().int().min(0),
+  maxQueueDepthObserved: z.number().int().min(0),
+  droppedRequests: z.number().int().min(0),
+  failedRequests: z.number().int().min(0),
+  meanServiceTimeMs: z.number().finite().min(0).nullable(),
+  meanWaitingTimeMs: z.number().finite().min(0).nullable(),
+  utilization: z.number().finite().min(0).max(1),
+  cacheHits: z.number().int().min(0),
+  cacheMisses: z.number().int().min(0),
+  cacheHitRatio: z.number().finite().min(0).max(1).nullable(),
+  rateLimitedCount: z.number().int().min(0),
+  dbReads: z.number().int().min(0),
+  dbWrites: z.number().int().min(0),
+  jobsEnqueued: z.number().int().min(0),
+  jobsCompleted: z.number().int().min(0),
+  jobsFailed: z.number().int().min(0),
+  jobMeanLatencyMs: z.number().finite().min(0).nullable(),
+  circuitState: z.enum(['closed', 'open', 'half_open']).optional(),
+  circuitRejections: z.number().int().min(0),
+  routedCounts: z.record(z.string(), z.number().int().min(0)),
+});
+
 export const ExperimentRecordSchema = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   id: z.string().min(1).max(100),
@@ -256,7 +301,7 @@ export const ExperimentRecordSchema = z.object({
     processedEvents: z.number().int(),
     sampleCount: z.number().int(),
   }),
-  nodeMetrics: z.record(z.string(), z.any()),
+  nodeMetrics: z.record(z.string(), NodeMetricsSchema),
   timeSeries: z
     .array(
       z.object({
@@ -340,7 +385,15 @@ export function safeParseProjectJson(rawText: string): SafeImportResult<SystemLa
     return { ok: false, error: 'Imported JSON must be a top-level project object.' };
   }
 
-  const sanitized = stripDangerousKeys(parsedUnknown as Record<string, unknown>);
+  let sanitized: Record<string, unknown>;
+  try {
+    sanitized = stripDangerousKeys(parsedUnknown as Record<string, unknown>);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Invalid JSON structure.',
+    };
+  }
   const migrated = migrateProjectPayload(sanitized);
 
   if (migrated.schemaVersion !== SCHEMA_VERSION) {
@@ -384,7 +437,15 @@ export function safeParseExperimentJson(rawText: string): SafeImportResult<Exper
     return { ok: false, error: 'Imported JSON must be a top-level experiment object.' };
   }
 
-  const sanitized = stripDangerousKeys(parsedUnknown as Record<string, unknown>);
+  let sanitized: Record<string, unknown>;
+  try {
+    sanitized = stripDangerousKeys(parsedUnknown as Record<string, unknown>);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Invalid JSON structure.',
+    };
+  }
   const validation = ExperimentRecordSchema.safeParse(sanitized);
   if (!validation.success) {
     const first = validation.error.issues[0];

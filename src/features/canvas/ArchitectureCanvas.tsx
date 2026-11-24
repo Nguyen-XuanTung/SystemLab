@@ -128,7 +128,9 @@ export function ArchitectureCanvas() {
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       if (locked) return;
-      const nodeType = event.dataTransfer.getData('application/systemlab-node-type') as ComponentType;
+      const nodeType = event.dataTransfer.getData(
+        'application/systemlab-node-type',
+      ) as ComponentType;
       if (!nodeType) return;
       const position = reactFlow.screenToFlowPosition({
         x: event.clientX,
@@ -187,7 +189,7 @@ export function ArchitectureCanvas() {
           run(ws.project, ws.visMode);
         }
       } else if (ev.key.toLowerCase() === 'f' && !ev.ctrlKey && !ev.metaKey) {
-        reactFlow.fitView({ padding: 0.2, duration: 200 });
+        reactFlow.fitView({ padding: 0.2, maxZoom: 1.15, duration: 200 });
       }
     };
 
@@ -211,17 +213,13 @@ export function ArchitectureCanvas() {
   // Refit canvas cleanly when switching projects or resizing bottom dock
   useEffect(() => {
     const timer = setTimeout(() => {
-      reactFlow.fitView({ padding: 0.28, duration: 150 });
+      reactFlow.fitView({ padding: 0.28, maxZoom: 1.15, duration: 150 });
     }, 60);
     return () => clearTimeout(timer);
   }, [bottomDockSize, projectId, reactFlow]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full w-full"
-      onClick={() => setContextMenu(null)}
-    >
+    <div ref={containerRef} className="relative h-full w-full" onClick={() => setContextMenu(null)}>
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
@@ -249,7 +247,7 @@ export function ArchitectureCanvas() {
         snapToGrid={snapToGrid}
         snapGrid={[16, 16]}
         fitView
-        fitViewOptions={{ padding: 0.28 }}
+        fitViewOptions={{ padding: 0.28, maxZoom: 1.15 }}
         deleteKeyCode={null}
         proOptions={{ hideAttribution: true }}
       >
@@ -262,6 +260,7 @@ export function ArchitectureCanvas() {
         <Controls showInteractive={false} />
         {bottomDockSize !== 'expanded' && (
           <MiniMap
+            className="hidden sm:block"
             pannable
             zoomable
             style={{ width: 128, height: 76 }}
@@ -300,7 +299,10 @@ export function ArchitectureCanvas() {
             <h3 className="text-base font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
               Empty Architecture Canvas
             </h3>
-            <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+            <p
+              className="mt-1.5 text-xs leading-relaxed"
+              style={{ color: 'var(--sl-text-secondary)' }}
+            >
               Drag or click components from the left palette to assemble a topology, or open a
               verified built-in scenario to start experimenting immediately.
             </p>
@@ -310,7 +312,7 @@ export function ArchitectureCanvas() {
                 onClick={() => loadScenario('scenario-01-hello-system-design')}
                 className="inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium text-white"
                 style={{
-                  backgroundColor: 'var(--sl-accent-traffic)',
+                  backgroundColor: 'var(--sl-btn-primary-bg)',
                 }}
               >
                 <Play className="h-3.5 w-3.5" />

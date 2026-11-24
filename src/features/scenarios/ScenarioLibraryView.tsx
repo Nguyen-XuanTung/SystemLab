@@ -16,7 +16,10 @@ export function ScenarioLibraryView() {
   return (
     <main className="h-full overflow-y-auto p-6">
       <div className="mx-auto max-w-6xl space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-4" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+        <div
+          className="flex flex-wrap items-end justify-between gap-3 border-b pb-4"
+          style={{ borderColor: 'var(--sl-border-subtle)' }}
+        >
           <div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--sl-text-primary)' }}>
               Built-in Scenario Library
@@ -62,7 +65,10 @@ export function ScenarioLibraryView() {
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono-tabular text-xs font-semibold" style={{ color: 'var(--sl-accent-traffic)' }}>
+                    <span
+                      className="font-mono-tabular text-xs font-semibold"
+                      style={{ color: 'var(--sl-accent-traffic)' }}
+                    >
                       Scenario {scenario.number} · {scenario.category}
                     </span>
                     <span
@@ -76,11 +82,17 @@ export function ScenarioLibraryView() {
                     </span>
                   </div>
 
-                  <h2 className="text-base font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
+                  <h2
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--sl-text-primary)' }}
+                  >
                     {scenario.title}
                   </h2>
 
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                  <p
+                    className="text-xs leading-relaxed"
+                    style={{ color: 'var(--sl-text-secondary)' }}
+                  >
                     {scenario.educationalObjective}
                   </p>
 
@@ -100,8 +112,14 @@ export function ScenarioLibraryView() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs" style={{ borderColor: 'var(--sl-border-subtle)' }}>
-                  <span className="font-mono-tabular text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+                <div
+                  className="mt-4 flex items-center justify-between border-t pt-3 text-xs"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
+                  <span
+                    className="font-mono-tabular text-[11px]"
+                    style={{ color: 'var(--sl-text-muted)' }}
+                  >
                     {proj.nodes.length} nodes · {proj.edges.length} edges ·{' '}
                     {proj.scheduledFaults.length} faults
                   </span>

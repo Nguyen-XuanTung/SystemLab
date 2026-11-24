@@ -180,7 +180,9 @@ export class MetricsCollector {
       const totalLatency = Math.max(0, nowMs - request.createdAtMs);
       this.totalLatencySumMs += totalLatency;
       this.totalLatencyCount += 1;
-      this.bucketLatencies.push(totalLatency);
+      if (this.timeSeries.length < MAX_TIME_SERIES_POINTS) {
+        this.bucketLatencies.push(totalLatency);
+      }
 
       if (this.latencyReservoir.length < MAX_LATENCY_RESERVOIR) {
         this.latencyReservoir.push(totalLatency);
@@ -207,7 +209,9 @@ export class MetricsCollector {
       createdAtMs: request.createdAtMs,
       completedAtMs: request.completedAtMs,
       totalLatencyMs:
-        request.completedAtMs !== null ? Math.max(0, request.completedAtMs - request.createdAtMs) : null,
+        request.completedAtMs !== null
+          ? Math.max(0, request.completedAtMs - request.createdAtMs)
+          : null,
       terminalState: request.terminalState ?? 'in_flight',
       errorCategory: request.errorCategory,
       hops: request.hops.map((h) => ({ ...h })),
@@ -229,7 +233,7 @@ export class MetricsCollector {
     if (!agg) return;
     const dt = Math.max(0, nowMs - agg.lastUtilUpdateMs);
     if (dt > 0) {
-      agg.busyWorkerMs += agg.lastActiveCount * dt;
+      agg.busyWorkerMs += Math.min(agg.lastActiveCount, agg.lastEffectiveCapacity) * dt;
       agg.availableWorkerMs += agg.lastEffectiveCapacity * dt;
       agg.lastUtilUpdateMs = nowMs;
     }
@@ -314,14 +318,16 @@ export class MetricsCollector {
   }
 
   recordJobCompleted(mqNodeId: string, workerNodeId: string, jobLatencyMs: number): void {
+    const safeLatency = Math.max(0, jobLatencyMs);
     const mqAgg = this.nodeAggregates.get(mqNodeId);
     if (mqAgg) {
       mqAgg.jobsCompleted += 1;
-      mqAgg.totalJobLatencyMs += Math.max(0, jobLatencyMs);
+      mqAgg.totalJobLatencyMs += safeLatency;
     }
     const workerAgg = this.nodeAggregates.get(workerNodeId);
     if (workerAgg) {
       workerAgg.jobsCompleted += 1;
+      workerAgg.totalJobLatencyMs += safeLatency;
     }
   }
 
@@ -362,6 +368,15 @@ export class MetricsCollector {
     if (isCacheHit) entry.cacheHitCount += 1;
   }
 
+  recordEdgeCacheHit(edgeId: string): void {
+    let entry = this.edgeDeltas.get(edgeId);
+    if (!entry) {
+      entry = { count: 0, errorCount: 0, cacheHitCount: 0 };
+      this.edgeDeltas.set(edgeId, entry);
+    }
+    entry.cacheHitCount += 1;
+  }
+
   logEvent(
     timestampMs: number,
     severity: EventSeverity,
@@ -387,7 +402,10 @@ export class MetricsCollector {
   }
 
   recordTimeSeriesBucket(nowMs: number, runtimeInputs: readonly NodeMetricInput[]): void {
-    if (this.timeSeries.length >= MAX_TIME_SERIES_POINTS) return;
+    if (this.timeSeries.length >= MAX_TIME_SERIES_POINTS) {
+      this.bucketLatencies = [];
+      return;
+    }
     const elapsedMs = Math.max(1, nowMs - this.prevBucketTimeMs);
     const deltaSucceeded = this.succeeded - this.prevBucketSucceeded;
     const deltaFailed = this.failed - this.prevBucketFailed;
@@ -517,8 +535,7 @@ export class MetricsCollector {
         jobsEnqueued: agg.jobsEnqueued,
         jobsCompleted: agg.jobsCompleted,
         jobsFailed: agg.jobsFailed,
-        jobMeanLatencyMs:
-          agg.jobsCompleted > 0 ? agg.totalJobLatencyMs / agg.jobsCompleted : null,
+        jobMeanLatencyMs: agg.jobsCompleted > 0 ? agg.totalJobLatencyMs / agg.jobsCompleted : null,
         circuitState: rt.circuitState,
         circuitRejections: agg.circuitRejections,
         routedCounts: { ...agg.routedCounts },

@@ -35,7 +35,7 @@ export class SeededRng {
   private readonly initialSeed: number;
 
   constructor(seed: number) {
-    const normalized = Number.isFinite(seed) ? (Math.trunc(seed) >>> 0) : 1;
+    const normalized = Number.isFinite(seed) ? Math.trunc(seed) >>> 0 : 1;
     this.initialSeed = normalized;
     const sm = { s: normalized === 0 ? 0x6d2b79f5 : normalized };
     this.s0 = splitMix32Next(sm);

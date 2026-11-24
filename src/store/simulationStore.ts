@@ -11,12 +11,7 @@ import type { WorkerResponse } from '@/workers/protocol';
 import { SimulationWorkerClient } from '@/workers/workerClient';
 
 export type SimLifecycleStatus =
-  | 'idle'
-  | 'running'
-  | 'paused'
-  | 'completed'
-  | 'halted_safety'
-  | 'error';
+  'idle' | 'running' | 'paused' | 'completed' | 'halted_safety' | 'error';
 
 export interface EdgePulseSummary {
   count: number;
@@ -104,7 +99,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => {
         break;
       case 'SNAPSHOT':
         set((state) => ({
-          status: 'running',
+          status: state.status === 'paused' ? 'paused' : 'running',
           snapshot: msg.snapshot,
           edgePulseMap: buildPulseMap(state.edgePulseMap, msg.snapshot.edgeDeltas),
         }));
@@ -186,7 +181,12 @@ export const useSimulationStore = create<SimulationState>((set, get) => {
     step: (project, visMode) => {
       const client = getClient(handleWorkerMessage);
       const curStatus = get().status;
-      if (curStatus === 'idle' || curStatus === 'completed' || curStatus === 'error') {
+      if (
+        curStatus === 'idle' ||
+        curStatus === 'completed' ||
+        curStatus === 'halted_safety' ||
+        curStatus === 'error'
+      ) {
         client.initRun({
           graph: toArchitectureGraph(project),
           config: { ...project.simConfig },

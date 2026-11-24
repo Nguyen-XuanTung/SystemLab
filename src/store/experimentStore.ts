@@ -72,6 +72,13 @@ export interface ExperimentState {
   setCandidate: (id: string | null) => void;
 }
 
+let expIdCounter = 0;
+
+function nextExpId(prefix: string): string {
+  expIdCounter += 1;
+  return `${prefix}-${Date.now()}-${expIdCounter}`;
+}
+
 export const useExperimentStore = create<ExperimentState>((set, get) => ({
   experiments: [],
   baselineId: null,
@@ -89,7 +96,7 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
   saveSnapshot: async (name, project, snapshot) => {
     const trimmed = name.trim() || `${project.name} Run`;
     const record = buildExperimentRecordFromSnapshot({
-      id: `exp-${Date.now()}`,
+      id: nextExpId('exp'),
       name: trimmed.slice(0, 120),
       project,
       config: project.simConfig,
@@ -123,7 +130,7 @@ export const useExperimentStore = create<ExperimentState>((set, get) => ({
     }
     const imported: ExperimentRecord = {
       ...res.data,
-      id: `exp-imp-${Date.now()}`,
+      id: nextExpId('exp-imp'),
     };
     await saveExpToDb(imported);
     const list = await listExperiments();

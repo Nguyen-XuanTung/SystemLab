@@ -1,6 +1,6 @@
 {
   "name": "systemlab",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Interactive local-first system design and distributed systems discrete-event simulation playground.",
   "type": "module",

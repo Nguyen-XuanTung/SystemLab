@@ -101,6 +101,12 @@ function applyThemeToDom(theme: ThemeMode): void {
 }
 
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+let idCounter = 0;
+
+function nextId(prefix: string): string {
+  idCounter += 1;
+  return `${prefix}-${Date.now()}-${idCounter}`;
+}
 
 function createInitialProject(): SystemLabProject {
   return BUILT_IN_SCENARIOS[0]!.createProject();
@@ -167,11 +173,17 @@ export interface WorkspaceState {
   updateNodeLabel: (nodeId: string, label: string) => void;
   updateNodeConfig: (nodeId: string, config: NodeConfig) => void;
   applyRfNodeChanges: (changes: NodeChangeset<CanvasFlowNode>) => void;
-  updateNodePositions: (updates: Array<{ id: string; position: { x: number; y: number } }>, recordHistory: boolean) => void;
+  updateNodePositions: (
+    updates: Array<{ id: string; position: { x: number; y: number } }>,
+    recordHistory: boolean,
+  ) => void;
   duplicateNode: (nodeId: string) => string | null;
   deleteNode: (nodeId: string) => void;
   addEdge: (source: string, target: string) => void;
-  updateEdge: (edgeId: string, patch: Partial<Pick<SimEdge, 'latencyMs' | 'routeType' | 'label'>>) => void;
+  updateEdge: (
+    edgeId: string,
+    patch: Partial<Pick<SimEdge, 'latencyMs' | 'routeType' | 'label'>>,
+  ) => void;
   deleteEdge: (edgeId: string) => void;
   autoLayout: () => void;
   updateSimConfig: (patch: Partial<SimulationConfig>) => void;
@@ -349,7 +361,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
       const now = new Date().toISOString();
       const blank: SystemLabProject = {
         schemaVersion: SCHEMA_VERSION,
-        id: `proj-${Date.now()}`,
+        id: nextId('proj'),
         name: 'Untitled Architecture',
         description: 'Custom distributed system architecture.',
         createdAt: now,
@@ -372,7 +384,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
       const found = BUILT_IN_SCENARIOS.find((s) => s.id === scenarioId);
       if (!found) return;
       const proj = found.createProject();
-      proj.id = `proj-${found.id}-${Date.now()}`;
+      proj.id = nextId(`proj-${found.id}`);
       proj.createdAt = new Date().toISOString();
       proj.updatedAt = proj.createdAt;
       replaceActiveProject(proj, true);
@@ -396,7 +408,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
       const now = new Date().toISOString();
       const copy: SystemLabProject = {
         ...structuredClone(cur),
-        id: `proj-copy-${Date.now()}`,
+        id: nextId('proj-copy'),
         name: `${cur.name} (Copy)`.slice(0, 120),
         createdAt: now,
         updatedAt: now,
@@ -408,6 +420,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
     },
 
     deleteProjectById: async (projectId) => {
+      if (autosaveTimer && get().project.id === projectId) {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+      }
       await deleteProjectFromDb(projectId);
       const remaining = await listProjects();
       if (remaining.length === 0) {
@@ -431,7 +447,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
       }
       const imported: SystemLabProject = {
         ...res.data,
-        id: `proj-import-${Date.now()}`,
+        id: nextId('proj-import'),
         updatedAt: new Date().toISOString(),
       };
       replaceActiveProject(imported, true);
@@ -463,8 +479,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
         id = `${type}-${idx}`;
       }
       const pos = position ?? {
-        x: 160 + (cur.nodes.length % 4) * 220,
-        y: 120 + Math.floor(cur.nodes.length / 4) * 140,
+        x: 100 + (cur.nodes.length % 4) * 300,
+        y: 120 + Math.floor(cur.nodes.length / 4) * 180,
       };
       const newNode: PersistedNode = {
         id,
@@ -612,7 +628,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
 
     addScheduledFault: (fault) => {
       const cur = get().project;
-      const id = `fault-${Date.now()}-${cur.scheduledFaults.length + 1}`;
+      const id = nextId('fault');
       applyProjectUpdate(
         {
           ...cur,
@@ -658,7 +674,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
         rfNodes: toFlowNodes(next.nodes),
         rfEdges: toFlowEdges(next.edges),
         validation: computeValidation(next),
-        past: [...past, project],
+        past: [...past.slice(-(MAX_UNDO_HISTORY - 1)), project],
         future: future.slice(1),
       });
       get().onGraphMutatedCallback?.();

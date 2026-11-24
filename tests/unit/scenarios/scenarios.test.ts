@@ -20,7 +20,11 @@ describe('Built-in Scenario Library (10 Verified Scenarios)', () => {
       expect(val.valid).toBe(true);
       expect(val.issues.filter((i) => i.severity === 'error')).toHaveLength(0);
 
-      const snap = new SimulationEngine(graph, proj.simConfig, proj.scheduledFaults).runToCompletion();
+      const snap = new SimulationEngine(
+        graph,
+        proj.simConfig,
+        proj.scheduledFaults,
+      ).runToCompletion();
       expect(snap.status).toBe('completed');
       expect(snap.global.generated).toBeGreaterThan(0);
       expect(snap.global.generated).toBe(

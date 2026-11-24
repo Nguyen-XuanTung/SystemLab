@@ -103,10 +103,7 @@ export class FaultManager {
   getTrafficMultiplier(clientNodeId: string): number {
     let multiplier = 1;
     for (const f of this.activeFaults.values()) {
-      if (
-        f.type === 'traffic_spike' &&
-        (f.targetId === clientNodeId || f.targetId === '*')
-      ) {
+      if (f.type === 'traffic_spike' && (f.targetId === clientNodeId || f.targetId === '*')) {
         multiplier *= Math.max(0.1, Math.min(50, f.value));
       }
     }

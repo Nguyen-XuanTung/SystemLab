@@ -212,7 +212,8 @@ export interface RequestHop {
   queueWaitMs: number;
   serviceMs: number;
   departedAtMs: number;
-  outcome: 'forwarded' | 'completed' | 'cache_hit' | 'cache_miss' | 'failed' | 'retried' | 'enqueued';
+  outcome:
+    'forwarded' | 'completed' | 'cache_hit' | 'cache_miss' | 'failed' | 'retried' | 'enqueued';
   note?: string;
 }
 
@@ -321,11 +322,7 @@ export interface EdgeTrafficDelta {
   cacheHitCount: number;
 }
 
-export type EngineRunStatus =
-  | 'ready'
-  | 'running'
-  | 'completed'
-  | 'halted_safety';
+export type EngineRunStatus = 'ready' | 'running' | 'completed' | 'halted_safety';
 
 export interface SimulationSnapshot {
   engineVersion: string;

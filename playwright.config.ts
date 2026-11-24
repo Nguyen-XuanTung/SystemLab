@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const localChannel = process.env.CI ? undefined : (process.env.PLAYWRIGHT_CHANNEL || 'chrome');
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -12,14 +14,14 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     viewport: { width: 1440, height: 900 },
-    channel: process.env.CI ? undefined : 'chrome',
+    channel: localChannel,
   },
   projects: [
     {
-      name: 'chrome',
+      name: localChannel ?? 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        channel: process.env.CI ? undefined : 'chrome',
+        channel: localChannel,
       },
     },
   ],

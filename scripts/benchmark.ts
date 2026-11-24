@@ -1,22 +1,27 @@
 import { performance } from 'node:perf_hooks';
 import { SimulationEngine } from '../src/engine/core/engine';
 import type { ArchitectureGraph, ScheduledFault, SimulationSnapshot } from '../src/engine/models/types';
+import { WorkerSessionRunner } from '../src/workers/runner';
 
-interface BenchmarkCaseResult {
+interface BenchmarkCaseSummary {
   name: string;
   nodes: number;
   edges: number;
   seed: number;
-  durationMs: number;
-  wallMs: number;
+  runs: number;
+  horizonMs: number;
+  medianWallMs: number;
+  minWallMs: number;
+  maxWallMs: number;
+  iqrWallMs: number;
   generated: number;
   succeeded: number;
   failed: number;
   timedOut: number;
+  simReqPerSec: number;
   processedEvents: number;
-  eventsPerSec: number;
-  heapUsedDeltaMb: number;
-  conserved: boolean;
+  medianEventsPerSec: number;
+  allConserved: boolean;
 }
 
 function makeThreeTierGraph(ratePerSecond: number): ArchitectureGraph {
@@ -151,14 +156,6 @@ function makeLarge25NodeGraph(ratePerSecond: number): ArchitectureGraph {
         healthCheckEnabled: true,
       },
     },
-  ];
-  const edges: ArchitectureGraph['edges'] = [
-    { id: 'e-c-gw', source: 'client', target: 'gw', latencyMs: 2, routeType: 'default' },
-    { id: 'e-gw-lb', source: 'gw', target: 'lb', latencyMs: 1, routeType: 'default' },
-  ];
-
-  // 20 parallel App Servers + Cache + DB = 25 nodes
-  nodes.push(
     {
       id: 'cache',
       label: 'Shared Cache',
@@ -184,8 +181,12 @@ function makeLarge25NodeGraph(ratePerSecond: number): ArchitectureGraph {
         failureProbability: 0,
       },
     },
-  );
-  edges.push({ id: 'e-cache-db', source: 'cache', target: 'db', latencyMs: 2, routeType: 'default' });
+  ];
+  const edges: ArchitectureGraph['edges'] = [
+    { id: 'e-c-gw', source: 'client', target: 'gw', latencyMs: 2, routeType: 'default' },
+    { id: 'e-gw-lb', source: 'gw', target: 'lb', latencyMs: 1, routeType: 'default' },
+    { id: 'e-cache-db', source: 'cache', target: 'db', latencyMs: 2, routeType: 'default' },
+  ];
 
   for (let i = 1; i <= 20; i += 1) {
     const id = `app-${i}`;
@@ -213,20 +214,24 @@ function makeLarge25NodeGraph(ratePerSecond: number): ArchitectureGraph {
   return { nodes, edges };
 }
 
-function runBenchmarkCase(
-  name: string,
+function quantile(sorted: readonly number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0]!;
+  const idx = p * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const w = idx - lo;
+  return sorted[lo]! * (1 - w) + sorted[hi]! * w;
+}
+
+function executeSingleRun(
   graph: ArchitectureGraph,
   seed: number,
   durationMs: number,
-  faults: ScheduledFault[] = [],
-  maxEvents = 2_000_000,
-): BenchmarkCaseResult {
-  if (typeof globalThis.gc === 'function') {
-    globalThis.gc();
-  }
-  const memBefore = process.memoryUsage().heapUsed;
+  faults: ScheduledFault[],
+  maxEvents: number,
+): { wallMs: number; snap: SimulationSnapshot } {
   const t0 = performance.now();
-
   const engine = new SimulationEngine(
     graph,
     {
@@ -243,70 +248,205 @@ function runBenchmarkCase(
     },
     faults,
   );
-  const snap: SimulationSnapshot = engine.runToCompletion();
+  const snap = engine.runToCompletion();
   const wallMs = performance.now() - t0;
-  const memAfter = process.memoryUsage().heapUsed;
+  return { wallMs, snap };
+}
 
-  const { generated, succeeded, failed, timedOut, inFlight, processedEvents } = snap.global;
-  const conserved = generated === succeeded + failed + timedOut + inFlight;
+function runBenchmarkCase(
+  name: string,
+  graph: ArchitectureGraph,
+  seed: number,
+  durationMs: number,
+  runs: number,
+  faults: ScheduledFault[] = [],
+  maxEvents = 2_500_000,
+): BenchmarkCaseSummary {
+  // 1 warmup run (discarded for JIT stability)
+  executeSingleRun(graph, seed, durationMs, faults, maxEvents);
+
+  const timings: number[] = [];
+  let lastSnap: SimulationSnapshot | null = null;
+  let allConserved = true;
+
+  for (let i = 0; i < runs; i += 1) {
+    if (typeof globalThis.gc === 'function') {
+      globalThis.gc();
+    }
+    const { wallMs, snap } = executeSingleRun(graph, seed, durationMs, faults, maxEvents);
+    timings.push(wallMs);
+    lastSnap = snap;
+    const { generated, succeeded, failed, timedOut, inFlight } = snap.global;
+    if (generated !== succeeded + failed + timedOut + inFlight) {
+      allConserved = false;
+    }
+  }
+
+  const sorted = [...timings].sort((a, b) => a - b);
+  const medianWallMs = quantile(sorted, 0.5);
+  const minWallMs = sorted[0] ?? 0;
+  const maxWallMs = sorted[sorted.length - 1] ?? 0;
+  const iqrWallMs = quantile(sorted, 0.75) - quantile(sorted, 0.25);
+
+  const g = lastSnap!.global;
+  const simReqPerSec = Number((g.generated / Math.max(durationMs / 1000, 0.001)).toFixed(1));
 
   return {
     name,
     nodes: graph.nodes.length,
     edges: graph.edges.length,
     seed,
-    durationMs,
-    wallMs: Number(wallMs.toFixed(2)),
-    generated,
-    succeeded,
-    failed,
-    timedOut,
-    processedEvents,
-    eventsPerSec: Math.round(processedEvents / Math.max(wallMs / 1000, 0.0001)),
-    heapUsedDeltaMb: Number(((memAfter - memBefore) / (1024 * 1024)).toFixed(2)),
-    conserved,
+    runs,
+    horizonMs: durationMs,
+    medianWallMs: Number(medianWallMs.toFixed(2)),
+    minWallMs: Number(minWallMs.toFixed(2)),
+    maxWallMs: Number(maxWallMs.toFixed(2)),
+    iqrWallMs: Number(iqrWallMs.toFixed(2)),
+    generated: g.generated,
+    succeeded: g.succeeded,
+    failed: g.failed,
+    timedOut: g.timedOut,
+    simReqPerSec,
+    processedEvents: g.processedEvents,
+    medianEventsPerSec: Math.round(g.processedEvents / Math.max(medianWallMs / 1000, 0.0001)),
+    allConserved,
   };
 }
 
-function main(): void {
-  const results: BenchmarkCaseResult[] = [
-    runBenchmarkCase('1k requests · small 2-node', {
-      nodes: [
-        makeThreeTierGraph(100).nodes[0]!,
-        makeThreeTierGraph(100).nodes[2]!,
-      ],
-      edges: [{ id: 'e1', source: 'client', target: 'app1', latencyMs: 2, routeType: 'default' }],
-    }, 42, 10_000),
-    runBenchmarkCase('10k requests · 3-tier medium (6 nodes)', makeThreeTierGraph(1000), 42, 10_000),
-    runBenchmarkCase('100k requests · 3-tier stretch (6 nodes)', makeThreeTierGraph(2500), 42, 40_000, [], 2_500_000),
-    runBenchmarkCase('25-node large topology · 5k requests', makeLarge25NodeGraph(500), 42, 10_000),
+async function runRepeatedWorkerCleanupCheck(): Promise<{
+  iterations: number;
+  totalWallMs: number;
+  heapDeltaMb: number;
+  allConserved: boolean;
+}> {
+  const graph = makeThreeTierGraph(500);
+  const iterations = 20;
+  let allConserved = true;
+  if (typeof globalThis.gc === 'function') {
+    globalThis.gc();
+  }
+  const memBefore = process.memoryUsage().heapUsed;
+  const t0 = performance.now();
+
+  for (let i = 0; i < iterations; i += 1) {
+    let completedSnap: SimulationSnapshot | null = null;
+    const runner = new WorkerSessionRunner((msg) => {
+      if (msg.type === 'COMPLETED') {
+        completedSnap = msg.snapshot;
+      }
+    });
+    runner.handleCommand({
+      type: 'INIT',
+      runId: i + 1,
+      graph,
+      config: {
+        seed: 100 + i,
+        durationMs: 10_000,
+        drainOnEnd: true,
+        maxDrainMs: 10_000,
+        safetyLimits: {
+          maxEvents: 500_000,
+          maxZeroTimeEvents: 10_000,
+          maxHops: 64,
+          maxInFlight: 100_000,
+        },
+      },
+      scheduledFaults: [],
+      speed: 100,
+      visMode: 'headless',
+    });
+    runner.handleCommand({ type: 'START', runId: i + 1 });
+    await new Promise<void>((resolve) => {
+      const check = (): void => {
+        if (completedSnap !== null) {
+          resolve();
+        } else {
+          setTimeout(check, 5);
+        }
+      };
+      setTimeout(check, 0);
+    });
+    const g = (completedSnap as SimulationSnapshot | null)?.global;
+    if (!g || g.generated !== g.succeeded + g.failed + g.timedOut + g.inFlight) {
+      allConserved = false;
+    }
+    runner.dispose();
+  }
+
+  const totalWallMs = Number((performance.now() - t0).toFixed(2));
+  if (typeof globalThis.gc === 'function') {
+    globalThis.gc();
+  }
+  const heapDeltaMb = Number(((process.memoryUsage().heapUsed - memBefore) / (1024 * 1024)).toFixed(2));
+  return { iterations, totalWallMs, heapDeltaMb, allConserved };
+}
+
+async function main(): Promise<void> {
+  const runs = Math.max(1, parseInt(process.env.BENCH_RUNS ?? '5', 10) || 5);
+  const results: BenchmarkCaseSummary[] = [
+    runBenchmarkCase(
+      '1k requests · small 2-node',
+      {
+        nodes: [makeThreeTierGraph(100).nodes[0]!, makeThreeTierGraph(100).nodes[2]!],
+        edges: [{ id: 'e1', source: 'client', target: 'app1', latencyMs: 2, routeType: 'default' }],
+      },
+      42,
+      10_000,
+      runs,
+    ),
+    runBenchmarkCase('10k requests · 3-tier medium (6 nodes)', makeThreeTierGraph(1000), 101, 10_000, runs),
+    runBenchmarkCase(
+      '100k requests · 3-tier stretch (6 nodes)',
+      makeThreeTierGraph(2500),
+      202,
+      40_000,
+      runs,
+      [],
+      2_500_000,
+    ),
+    runBenchmarkCase('25-node large topology · 5k requests', makeLarge25NodeGraph(500), 303, 10_000, runs),
     runBenchmarkCase(
       'Failure & recovery · 10k requests',
       makeThreeTierGraph(1000),
-      42,
+      404,
       10_000,
+      runs,
       [{ id: 'f1', type: 'node_failure', targetId: 'app1', startAtMs: 3000, durationMs: 4000, value: 1 }],
     ),
-    runBenchmarkCase('Queue saturation overload · 10k requests', (() => {
-      const g = makeThreeTierGraph(2000);
-      for (const n of g.nodes) {
-        if (n.config.type === 'app_server') {
-          n.config.concurrency = 4;
-          n.config.queueCapacity = 20;
+    runBenchmarkCase(
+      'Queue saturation overload · 10k requests',
+      (() => {
+        const g = makeThreeTierGraph(2000);
+        for (const n of g.nodes) {
+          if (n.config.type === 'app_server') {
+            n.config.concurrency = 4;
+            n.config.queueCapacity = 20;
+          }
         }
-      }
-      return g;
-    })(), 42, 5_000),
+        return g;
+      })(),
+      505,
+      5_000,
+      runs,
+    ),
   ];
 
-  console.log(`Environment: Node ${process.version} · ${process.platform}/${process.arch}`);
+  console.log(
+    `Environment: Node ${process.version} · ${process.platform}/${process.arch} · Warmup: 1 · Timed Runs/Case: ${runs}`,
+  );
+  console.log(
+    'Note: medianEventsPerSec measures discrete-event simulation kernel throughput; simReqPerSec is virtual simulated workload rate (NOT production HTTP RPS).',
+  );
   console.table(results);
 
-  const failedConservation = results.filter((r) => !r.conserved);
-  if (failedConservation.length > 0) {
+  const workerCheck = await runRepeatedWorkerCleanupCheck();
+  console.log('Repeated WorkerSessionRunner cleanup check (20 x 5k requests):', workerCheck);
+
+  const failedConservation = results.filter((r) => !r.allConserved);
+  if (failedConservation.length > 0 || !workerCheck.allConserved) {
     console.error('Request conservation failed on benchmark cases:', failedConservation);
     process.exitCode = 1;
   }
 }
 
-main();
+void main();

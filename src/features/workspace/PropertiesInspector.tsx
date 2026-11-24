@@ -15,7 +15,7 @@ import { COMPONENT_DEFINITIONS, type ConfigFieldDescriptor } from '@/engine/mode
 import type { NodeConfig, SimEdge } from '@/engine/models/types';
 import { ComponentIcon } from '@/components/ui/ComponentIcon';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { formatMs, formatPct } from '@/lib/format';
+import { formatMs, formatPct, hasCapacityPool } from '@/lib/format';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 
@@ -54,9 +54,7 @@ function renderFieldControl(params: {
             borderColor: 'var(--sl-border-default)',
           }}
         >
-          <Switch.Thumb
-            className="block h-3.5 w-3.5 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-[18px]"
-          />
+          <Switch.Thumb className="block h-3.5 w-3.5 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-[18px]" />
         </Switch.Root>
       </div>
     );
@@ -127,9 +125,7 @@ function renderFieldControl(params: {
         value={Number.isFinite(numVal) ? numVal : ''}
         onChange={(e) => {
           const parsed =
-            field.type === 'integer'
-              ? parseInt(e.target.value, 10)
-              : parseFloat(e.target.value);
+            field.type === 'integer' ? parseInt(e.target.value, 10) : parseFloat(e.target.value);
           onChange({
             ...config,
             [field.key]: Number.isNaN(parsed) ? 0 : parsed,
@@ -213,10 +209,7 @@ export function PropertiesInspector() {
           borderColor: 'var(--sl-border-subtle)',
         }}
       >
-        <div
-          className="border-b px-3.5 py-3"
-          style={{ borderColor: 'var(--sl-border-subtle)' }}
-        >
+        <div className="border-b px-3.5 py-3" style={{ borderColor: 'var(--sl-border-subtle)' }}>
           <div className="text-xs font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
             Connection Edge
           </div>
@@ -357,7 +350,10 @@ export function PropertiesInspector() {
             <ComponentIcon type={node.config.type} className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <div className="truncate text-xs font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
+            <div
+              className="truncate text-xs font-semibold"
+              style={{ color: 'var(--sl-text-primary)' }}
+            >
               {node.label}
             </div>
             <div className="text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
@@ -585,38 +581,54 @@ export function PropertiesInspector() {
                 </div>
               </div>
 
-              <div>
+              {hasCapacityPool(node.config.type) ? (
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span style={{ color: 'var(--sl-text-secondary)' }}>
+                      {node.config.type === 'message_queue'
+                        ? 'Queue Occupancy'
+                        : 'Time-Weighted Utilization'}
+                    </span>
+                    <span className="font-mono-tabular" style={{ color: 'var(--sl-text-primary)' }}>
+                      {formatPct(nodeMetrics.utilization)}
+                    </span>
+                  </div>
+                  <div
+                    className="mt-1.5 h-2 w-full overflow-hidden rounded-full"
+                    style={{ backgroundColor: 'var(--sl-bg-input)' }}
+                  >
+                    <div
+                      className="h-full transition-all"
+                      style={{
+                        width: `${Math.min(100, nodeMetrics.utilization * 100)}%`,
+                        backgroundColor:
+                          nodeMetrics.utilization > 0.85
+                            ? 'var(--sl-accent-danger)'
+                            : nodeMetrics.utilization > 0.65
+                              ? 'var(--sl-accent-warning)'
+                              : 'var(--sl-accent-compute)',
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
                 <div className="flex items-center justify-between text-xs">
-                  <span style={{ color: 'var(--sl-text-secondary)' }}>Time-Weighted Utilization</span>
-                  <span className="font-mono-tabular" style={{ color: 'var(--sl-text-primary)' }}>
-                    {formatPct(nodeMetrics.utilization)}
+                  <span style={{ color: 'var(--sl-text-secondary)' }}>Utilization</span>
+                  <span className="font-mono-tabular" style={{ color: 'var(--sl-text-muted)' }}>
+                    N/A — Stateless component
                   </span>
                 </div>
-                <div
-                  className="mt-1.5 h-2 w-full overflow-hidden rounded-full"
-                  style={{ backgroundColor: 'var(--sl-bg-input)' }}
-                >
-                  <div
-                    className="h-full transition-all"
-                    style={{
-                      width: `${Math.min(100, nodeMetrics.utilization * 100)}%`,
-                      backgroundColor:
-                        nodeMetrics.utilization > 0.85
-                          ? 'var(--sl-accent-danger)'
-                          : nodeMetrics.utilization > 0.65
-                            ? 'var(--sl-accent-warning)'
-                            : 'var(--sl-accent-compute)',
-                    }}
-                  />
-                </div>
-              </div>
+              )}
 
               {node.config.type === 'cache' && (
                 <div
                   className="rounded border p-2.5 text-xs space-y-1 font-mono-tabular"
                   style={{ borderColor: 'var(--sl-border-subtle)' }}
                 >
-                  <div className="font-sans font-medium" style={{ color: 'var(--sl-text-primary)' }}>
+                  <div
+                    className="font-sans font-medium"
+                    style={{ color: 'var(--sl-text-primary)' }}
+                  >
                     Probabilistic Cache Telemetry
                   </div>
                   <div>Hits: {nodeMetrics.cacheHits}</div>
@@ -630,7 +642,10 @@ export function PropertiesInspector() {
                   className="rounded border p-2.5 text-xs space-y-1 font-mono-tabular"
                   style={{ borderColor: 'var(--sl-border-subtle)' }}
                 >
-                  <div className="font-sans font-medium" style={{ color: 'var(--sl-text-primary)' }}>
+                  <div
+                    className="font-sans font-medium"
+                    style={{ color: 'var(--sl-text-primary)' }}
+                  >
                     Query Operations
                   </div>
                   <div>Reads: {nodeMetrics.dbReads}</div>
@@ -643,10 +658,15 @@ export function PropertiesInspector() {
                   className="rounded border p-2.5 text-xs space-y-1 font-mono-tabular"
                   style={{ borderColor: 'var(--sl-border-subtle)' }}
                 >
-                  <div className="font-sans font-medium" style={{ color: 'var(--sl-text-primary)' }}>
+                  <div
+                    className="font-sans font-medium"
+                    style={{ color: 'var(--sl-text-primary)' }}
+                  >
                     Async Background Jobs
                   </div>
-                  <div>Enqueued: {nodeMetrics.jobsEnqueued}</div>
+                  {node.config.type === 'message_queue' && (
+                    <div>Enqueued: {nodeMetrics.jobsEnqueued}</div>
+                  )}
                   <div>Completed: {nodeMetrics.jobsCompleted}</div>
                   <div>Failed: {nodeMetrics.jobsFailed}</div>
                   <div>Mean Job Time: {formatMs(nodeMetrics.jobMeanLatencyMs)}</div>
@@ -658,7 +678,10 @@ export function PropertiesInspector() {
                   className="rounded border p-2.5 text-xs space-y-1 font-mono-tabular"
                   style={{ borderColor: 'var(--sl-border-subtle)' }}
                 >
-                  <div className="font-sans font-medium" style={{ color: 'var(--sl-text-primary)' }}>
+                  <div
+                    className="font-sans font-medium"
+                    style={{ color: 'var(--sl-text-primary)' }}
+                  >
                     Circuit Breaker State
                   </div>
                   <div>State: {(nodeMetrics.circuitState ?? 'closed').toUpperCase()}</div>
@@ -679,10 +702,16 @@ export function PropertiesInspector() {
                       project.nodes.find((n) => n.id === targetId)?.label ?? targetId;
                     return (
                       <div key={targetId} className="flex items-center justify-between text-[11px]">
-                        <span className="truncate pr-2" style={{ color: 'var(--sl-text-secondary)' }}>
+                        <span
+                          className="truncate pr-2"
+                          style={{ color: 'var(--sl-text-secondary)' }}
+                        >
                           {targetLabel}
                         </span>
-                        <span className="font-mono-tabular" style={{ color: 'var(--sl-text-primary)' }}>
+                        <span
+                          className="font-mono-tabular"
+                          style={{ color: 'var(--sl-text-primary)' }}
+                        >
                           {count}
                         </span>
                       </div>
@@ -694,7 +723,10 @@ export function PropertiesInspector() {
           )}
         </Tabs.Content>
 
-        <Tabs.Content value="learn" className="flex-1 overflow-y-auto p-3.5 space-y-3 text-xs leading-relaxed">
+        <Tabs.Content
+          value="learn"
+          className="flex-1 overflow-y-auto p-3.5 space-y-3 text-xs leading-relaxed"
+        >
           <div>
             <h3 className="font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
               What It Is
@@ -723,7 +755,10 @@ export function PropertiesInspector() {
             <h3 className="font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
               Common Failure Modes
             </h3>
-            <ul className="mt-1 list-disc pl-4 space-y-1" style={{ color: 'var(--sl-text-secondary)' }}>
+            <ul
+              className="mt-1 list-disc pl-4 space-y-1"
+              style={{ color: 'var(--sl-text-secondary)' }}
+            >
               {def.education.failureModes.map((item) => (
                 <li key={item}>{item}</li>
               ))}

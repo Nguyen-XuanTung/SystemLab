@@ -83,30 +83,74 @@ describe('Chaos Lab Fault Injection & Recovery', () => {
     const baseline = new SimulationEngine(graph, { seed: 42, durationMs: 4000 }).runToCompletion();
 
     const latencyFaulted = new SimulationEngine(graph, { seed: 42, durationMs: 4000 }, [
-      { id: 'f-lat', type: 'latency_spike', targetId: 'db', startAtMs: 0, durationMs: 4000, value: 300 },
+      {
+        id: 'f-lat',
+        type: 'latency_spike',
+        targetId: 'db',
+        startAtMs: 0,
+        durationMs: 4000,
+        value: 300,
+      },
     ]).runToCompletion();
-    expect(latencyFaulted.global.meanLatencyMs!).toBeGreaterThan(baseline.global.meanLatencyMs! + 40);
+    expect(latencyFaulted.global.meanLatencyMs!).toBeGreaterThan(
+      baseline.global.meanLatencyMs! + 40,
+    );
 
     const coldStartSnap = new SimulationEngine(graph, { seed: 42, durationMs: 4000 }, [
-      { id: 'f-cold', type: 'cache_cold_start', targetId: 'cache', startAtMs: 0, durationMs: 2000, value: 1 },
+      {
+        id: 'f-cold',
+        type: 'cache_cold_start',
+        targetId: 'cache',
+        startAtMs: 0,
+        durationMs: 2000,
+        value: 1,
+      },
     ]).runToCompletion();
     expect(coldStartSnap.nodeMetrics.cache!.cacheMisses).toBeGreaterThan(
       baseline.nodeMetrics.cache!.cacheMisses,
     );
 
     const spikeSnap = new SimulationEngine(graph, { seed: 42, durationMs: 4000 }, [
-      { id: 'f-spike', type: 'traffic_spike', targetId: 'c', startAtMs: 1000, durationMs: 2000, value: 4 },
+      {
+        id: 'f-spike',
+        type: 'traffic_spike',
+        targetId: 'c',
+        startAtMs: 1000,
+        durationMs: 2000,
+        value: 4,
+      },
     ]).runToCompletion();
     expect(spikeSnap.global.generated).toBeGreaterThan(baseline.global.generated * 2);
 
     const dropSnap = new SimulationEngine(graph, { seed: 42, durationMs: 4000 }, [
-      { id: 'f-drop', type: 'packet_drop', targetId: 'cache', startAtMs: 0, durationMs: 4000, value: 0.5 },
+      {
+        id: 'f-drop',
+        type: 'packet_drop',
+        targetId: 'cache',
+        startAtMs: 0,
+        durationMs: 4000,
+        value: 0.5,
+      },
     ]).runToCompletion();
     expect(dropSnap.global.failed).toBeGreaterThan(20);
 
     const edgeFailSnap = new SimulationEngine(graph, { seed: 42, durationMs: 4000 }, [
-      { id: 'f-edge', type: 'edge_failure', targetId: 'e1', startAtMs: 1000, durationMs: 1000, value: 1 },
-      { id: 'f-elat', type: 'edge_latency_spike', targetId: 'e1', startAtMs: 2500, durationMs: 1500, value: 100 },
+      {
+        id: 'f-edge',
+        type: 'edge_failure',
+        targetId: 'e1',
+        startAtMs: 1000,
+        durationMs: 1000,
+        value: 1,
+      },
+      {
+        id: 'f-elat',
+        type: 'edge_latency_spike',
+        targetId: 'e1',
+        startAtMs: 2500,
+        durationMs: 1500,
+        value: 100,
+      },
     ]).runToCompletion();
     expect(edgeFailSnap.global.failed).toBeGreaterThanOrEqual(19);
     expect(edgeFailSnap.global.meanLatencyMs!).toBeGreaterThan(baseline.global.meanLatencyMs! + 20);
@@ -146,7 +190,12 @@ describe('Chaos Lab Fault Injection & Recovery', () => {
         {
           id: 'mq',
           label: 'MQ',
-          config: { type: 'message_queue', queueCapacity: 50, enqueueLatencyMs: 2, deliveryMode: 'async_ack' },
+          config: {
+            type: 'message_queue',
+            queueCapacity: 50,
+            enqueueLatencyMs: 2,
+            deliveryMode: 'async_ack',
+          },
         },
         {
           id: 'w',
@@ -169,8 +218,22 @@ describe('Chaos Lab Fault Injection & Recovery', () => {
     };
 
     const capSnap = new SimulationEngine(capGraph, { seed: 1, durationMs: 4000 }, [
-      { id: 'f-cap', type: 'capacity_drop', targetId: 'app', startAtMs: 500, durationMs: 1500, value: 0.25 },
-      { id: 'f-wdown', type: 'node_failure', targetId: 'w', startAtMs: 1000, durationMs: 1000, value: 1 },
+      {
+        id: 'f-cap',
+        type: 'capacity_drop',
+        targetId: 'app',
+        startAtMs: 500,
+        durationMs: 1500,
+        value: 0.25,
+      },
+      {
+        id: 'f-wdown',
+        type: 'node_failure',
+        targetId: 'w',
+        startAtMs: 1000,
+        durationMs: 1000,
+        value: 1,
+      },
     ]).runToCompletion();
     expect(capSnap.nodeMetrics.app!.maxQueueDepthObserved).toBeGreaterThan(0);
     expect(capSnap.nodeMetrics.w!.jobsFailed).toBeGreaterThan(0);
@@ -182,7 +245,14 @@ describe('Chaos Lab Fault Injection & Recovery', () => {
       zeroWarmupGraph.nodes[1]!.config.coldStartWarmupMs = 0;
     }
     const coldZeroSnap = new SimulationEngine(zeroWarmupGraph, { seed: 3, durationMs: 2000 }, [
-      { id: 'f-cold-0', type: 'cache_cold_start', targetId: 'cache', startAtMs: 0, durationMs: 2000, value: 1 },
+      {
+        id: 'f-cold-0',
+        type: 'cache_cold_start',
+        targetId: 'cache',
+        startAtMs: 0,
+        durationMs: 2000,
+        value: 1,
+      },
     ]).runToCompletion();
     expect(coldZeroSnap.nodeMetrics.cache!.cacheHits).toBe(0);
 

@@ -41,7 +41,10 @@ function validateNodeConfig(nodeId: string, label: string, config: NodeConfig): 
       if (!Number.isFinite(config.burstMultiplier) || config.burstMultiplier < 1) {
         pushErr('INVALID_BURST_MULT', `${label}: burst multiplier must be >= 1.`);
       }
-      if (!isFinitePositive(config.burstDurationMs) || config.burstPeriodMs <= config.burstDurationMs) {
+      if (
+        !isFinitePositive(config.burstDurationMs) ||
+        config.burstPeriodMs <= config.burstDurationMs
+      ) {
         pushErr('INVALID_BURST_WINDOW', `${label}: burst period must exceed burst duration.`);
       }
       break;
@@ -194,7 +197,11 @@ export function validateGraph(
   }
 
   if (simConfig) {
-    if (!Number.isFinite(simConfig.durationMs) || simConfig.durationMs <= 0 || simConfig.durationMs > 3_600_000) {
+    if (
+      !Number.isFinite(simConfig.durationMs) ||
+      simConfig.durationMs <= 0 ||
+      simConfig.durationMs > 3_600_000
+    ) {
       issues.push({
         id: 'invalid-duration',
         severity: 'error',
@@ -362,6 +369,15 @@ export function validateGraph(
         nodeId: id,
       });
     }
+    if (node.config.type === 'client' && out.length > 1) {
+      issues.push({
+        id: `client-multi-edge-${id}`,
+        severity: 'warning',
+        code: 'MULTIPLE_OUTGOING_EDGES',
+        message: `${node.label} has multiple outgoing connections: traffic forwards along the first live edge. Insert a Load Balancer to distribute traffic across targets.`,
+        nodeId: id,
+      });
+    }
     if (node.config.type === 'cache' && node.config.hitProbability < 1 && out.length === 0) {
       issues.push({
         id: `cache-no-miss-target-${id}`,
@@ -371,7 +387,11 @@ export function validateGraph(
         nodeId: id,
       });
     }
-    if (node.config.type === 'cache' && node.config.writePolicy === 'write_through' && out.length === 0) {
+    if (
+      node.config.type === 'cache' &&
+      node.config.writePolicy === 'write_through' &&
+      out.length === 0
+    ) {
       issues.push({
         id: `cache-write-origin-${id}`,
         severity: 'error',
@@ -390,7 +410,9 @@ export function validateGraph(
       });
     }
     if (node.config.type === 'message_queue') {
-      const workerTargets = out.filter((targetId) => nodeMap.get(targetId)?.config.type === 'worker');
+      const workerTargets = out.filter(
+        (targetId) => nodeMap.get(targetId)?.config.type === 'worker',
+      );
       if (workerTargets.length === 0) {
         issues.push({
           id: `mq-no-worker-${id}`,

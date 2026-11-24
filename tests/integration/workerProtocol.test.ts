@@ -95,4 +95,65 @@ describe('Web Worker Protocol & SimulationWorkerClient', () => {
 
     runner.dispose();
   });
+
+  it('preserves PAUSED state on RECOVER_FAULT while paused and discards stale responses on rapid restart/dispose', async () => {
+    const received: WorkerResponse[] = [];
+    const runner = new WorkerSessionRunner((msg) => received.push(msg));
+    const proj = BUILT_IN_SCENARIOS[0]!.createProject();
+    const graph = {
+      nodes: proj.nodes.map((n) => ({ id: n.id, label: n.label, config: n.config })),
+      edges: proj.edges,
+    };
+
+    runner.handleCommand({
+      type: 'INIT',
+      runId: 1,
+      graph,
+      config: { ...proj.simConfig, durationMs: 2000 },
+      scheduledFaults: [],
+      speed: 1,
+      visMode: 'normal',
+    });
+    runner.handleCommand({ type: 'STEP', runId: 1 });
+    runner.handleCommand({
+      type: 'INJECT_FAULT',
+      runId: 1,
+      faultType: 'node_failure',
+      targetId: 'app-1',
+      value: 1,
+      durationMs: null,
+    });
+    const injected = received.find((m) => m.type === 'FAULT_INJECTED');
+    expect(injected?.type).toBe('FAULT_INJECTED');
+    if (injected?.type === 'FAULT_INJECTED') {
+      runner.handleCommand({ type: 'RECOVER_FAULT', runId: 1, faultId: injected.fault.id });
+    }
+    expect(received[received.length - 1]?.type).toBe('PAUSED');
+    runner.dispose();
+
+    // Rapid client restart & dispose leaves zero stale run responses
+    const client = new SimulationWorkerClient(true);
+    const seen: WorkerResponse[] = [];
+    client.subscribe((m) => seen.push(m));
+    const r1 = client.initRun({
+      graph,
+      config: { ...proj.simConfig, durationMs: 4000 },
+      scheduledFaults: [],
+      speed: 1,
+      visMode: 'normal',
+    });
+    client.start();
+    const r2 = client.initRun({
+      graph,
+      config: { ...proj.simConfig, durationMs: 1000 },
+      scheduledFaults: [],
+      speed: 100,
+      visMode: 'headless',
+    });
+    client.start();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(seen.some((m) => m.runId === r1 && m.type === 'COMPLETED')).toBe(false);
+    expect(seen.some((m) => m.runId === r2 && m.type === 'COMPLETED')).toBe(true);
+    client.dispose();
+  });
 });

@@ -1,26 +1,28 @@
 # Security & Reliability Review — SystemLab
 
-**Review Date:** 2026-11-24  
-**Scope:** Static source code, import validation, browser storage, worker lifecycle, and npm dependency tree.
+**Review Date:** 2026-11-25  
+**Scope:** Static source code, import validation, browser storage, worker lifecycle, GitHub Actions CI permissions, npm dependency audit, and dependency license inventory.
 
 ---
 
 ## 1. Threat Controls Verified
 
-| Risk Area | Control Implemented | Verification |
-|---|---|---|
-| **Prototype Pollution on JSON Import** | `stripDangerousKeys()` recursively strips `__proto__`, `constructor`, and `prototype` keys from parsed JSON prior to Zod schema checks. | Unit tested (`tests/unit/schemas/schemaAndSecurity.test.ts`). |
-| **Oversized / Malformed Imports** | `MAX_IMPORT_BYTES = 2 MB` UTF-8 size check executes before `JSON.parse`; Zod `ProjectFileV1Schema` and `ExperimentRecordSchema` enforce strict types, finite numbers, bounded node/edge counts (`<=100`/`<=300`), and referential integrity. | Unit tested across malformed JSON, unknown component types, dangling edges, and unsupported versions. |
-| **Arbitrary Code Execution / XSS** | Zero uses of `eval`, `new Function`, or `dangerouslySetInnerHTML`. Imported node behavior maps strictly to typed declarative component configs. | Verified via static regex grep across `src/`, `tests/`, `scripts/`. |
-| **Simulation DoS / Infinite Loops** | DAG cycle validation (`validateGraph`), `maxEvents`, `maxZeroTimeEvents`, `maxHops`, and `maxInFlight` ceilings abort pathological configs deterministically (`halted_safety`). | Verified in `tests/unit/engine/safetyLimits.test.ts`. |
-| **Worker Race Conditions** | Every run increments a monotonic `runId`; `SimulationWorkerClient` drops any worker message whose `runId` differs from `activeRunId`. | Verified in `tests/integration/workerProtocol.test.ts`. |
-| **Storage Failures** | `repository.ts` catches IndexedDB errors and degrades transparently to in-memory session storage while surfacing a visible backup warning banner. | Verified via try/catch fallback design and `fake-indexeddb` integration tests. |
-| **Privacy & Telemetry** | Zero external analytics, zero backend API calls, zero LLM API keys, zero personal data collection. | Static inspection of network/import usage. |
+| Risk Area                                             | Control Implemented                                                                                                                                                                                                                                                                  | Verification                                                                                              |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| **Prototype Pollution on JSON Import**                | `stripDangerousKeys()` recursively strips `__proto__`, `constructor`, and `prototype` keys prior to Zod schema validation and enforces a recursion guard (`MAX_JSON_DEPTH = 64`) to prevent stack overflow DoS on deeply nested payloads.                                            | Unit tested (`tests/unit/schemas/schemaAndSecurity.test.ts`).                                             |
+| **Oversized / Malformed Imports & Schema Strictness** | `MAX_IMPORT_BYTES = 2 MB` UTF-8 size check executes before `JSON.parse`; `ProjectFileV1Schema` and `ExperimentRecordSchema` validate types, finite numbers, bounded node/edge counts (`<=100`/`<=300`), referential integrity, and strict `NodeMetricsSchema` fields (no `z.any()`). | Unit tested across malformed JSON, unknown types, deep nesting, dangling edges, and unsupported versions. |
+| **Arbitrary Code Execution / XSS**                    | Zero uses of `eval`, `new Function`, or `dangerouslySetInnerHTML`. Imported node behavior maps strictly to typed declarative configs.                                                                                                                                                | Verified via static grep across `src/`, `tests/`, `scripts/`.                                             |
+| **Simulation DoS / Infinite Loops**                   | DAG cycle validation (`validateGraph`), `maxEvents`, `maxZeroTimeEvents`, `maxHops`, and `maxInFlight` ceilings abort pathological configs deterministically (`halted_safety`).                                                                                                      | Verified in `tests/unit/engine/safetyLimits.test.ts`.                                                     |
+| **Worker Race Conditions**                            | Every run increments a monotonic `runId`; `SimulationWorkerClient` drops any worker message whose `runId` differs from `activeRunId`.                                                                                                                                                | Verified in `tests/integration/workerProtocol.test.ts`.                                                   |
+| **Storage Failures**                                  | `repository.ts` catches IndexedDB errors, cancels pending autosave timers on active project deletion, and degrades to in-memory session storage while surfacing a visible warning banner.                                                                                            | Verified in `tests/integration/persistence.test.ts` and Playwright E2E Test 4.                            |
+| **GitHub Actions Permissions**                        | `.github/workflows/ci.yml` sets explicit top-level `permissions: { contents: read }`. `.github/workflows/deploy-pages.yml` defaults to `contents: read` at the workflow and `build` job levels and scopes `pages: write` / `id-token: write` strictly to the `deploy` job.           | Static workflow inspection.                                                                               |
+| **Privacy & External Requests**                       | Zero external analytics, zero backend API calls, zero LLM API keys, zero personal data collection, and local fonts/SVG assets bundled directly.                                                                                                                                      | Static source inspection and live browser network verification.                                           |
 
 ---
 
-## 2. Dependency Audit & Repository Hygiene
+## 2. Dependency Audit, Licenses & Git Hygiene
 
-- **`npm audit`:** `found 0 vulnerabilities` across 356 installed packages on 2026-11-24.
-- **Repository Hygiene Scan:** Zero hardcoded API keys, credentials, or local developer file paths (`C:\Users\...`) exist in `src/`, `tests/`, `scripts/`, or `docs/`.
-- **Git Exclusions:** `.ai-local/` internal tracking state is excluded in both `.gitignore` and `.git/info/exclude`.
+- **`npm audit`:** `0` vulnerabilities reported.
+- **Installed Package Licenses (`348` packages scanned in `node_modules`):** `MIT` (279), `ISC` (27), `Apache-2.0` (22), `BSD-2-Clause` (8), `BSD-3-Clause` (4), `BlueOak-1.0.0` (3), `CC-BY-4.0` (1), `0BSD` (1), `MIT AND ISC AND BSD-3-Clause` (1), and weak file-level copyleft `MPL-2.0` (2 transitive build packages: `lightningcss@1.33.0`, `lightningcss-win32-x64-msvc@1.33.0`). Zero strong copyleft (`GPL`/`AGPL`) dependencies detected.
+- **Repository Hygiene Scan:** Zero secrets, API keys, or local Windows machine paths exist in tracked source, tests, scripts, or docs. `.ai-local/` is ignored in `.gitignore` and `.git/info/exclude` with `0` tracked files.
+- **Owner Review Note:** Existing pre-freeze git commits in local history carry the repository owner's configured git author metadata, and `LICENSE` carries `Copyright (c) 2026 Nguyen Xuan Tung`; confirm attribution and author metadata preferences prior to public push.

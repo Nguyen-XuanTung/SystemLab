@@ -92,18 +92,20 @@ describe('MetricsCollector & R-7 Percentile Calculations', () => {
       },
     ]);
     expect(collector.getTimeSeries()).toHaveLength(1);
-    expect(collector.buildNodeMetrics(500, [
-      {
-        nodeId: 'mq',
-        label: 'MQ',
-        type: 'message_queue',
-        status: 'healthy',
-        activeRequests: 0,
-        queueDepth: 10,
-        effectiveCapacity: 20,
-        queueCapacity: 20,
-      },
-    ]).mq!.utilization).toBeCloseTo(0.5, 5);
+    expect(
+      collector.buildNodeMetrics(500, [
+        {
+          nodeId: 'mq',
+          label: 'MQ',
+          type: 'message_queue',
+          status: 'healthy',
+          activeRequests: 0,
+          queueDepth: 10,
+          effectiveCapacity: 20,
+          queueCapacity: 20,
+        },
+      ]).mq!.utilization,
+    ).toBeCloseTo(0.5, 5);
 
     // Reservoir replacement beyond 50,000 succeeded samples + failed & timed_out terminal stats
     const largeCollector = new MetricsCollector(10_000, new SeededRng(9));

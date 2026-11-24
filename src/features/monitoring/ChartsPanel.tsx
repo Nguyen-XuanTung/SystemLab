@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { BarChart3 } from 'lucide-react';
+import { hasCapacityPool } from '@/lib/format';
 import { useSimulationStore } from '@/store/simulationStore';
 
 export function ChartsPanel() {
@@ -24,15 +25,15 @@ export function ChartsPanel() {
           No Simulation Telemetry Yet
         </p>
         <p className="mt-1 max-w-md text-xs" style={{ color: 'var(--sl-text-muted)' }}>
-          Charts render strictly from virtual-time engine buckets — never fabricated placeholder curves.
-          Press Run to stream live time-series data.
+          Charts render strictly from virtual-time engine buckets — never fabricated placeholder
+          curves. Press Run to stream live time-series data.
         </p>
       </div>
     );
   }
 
   const utilizationData = Object.values(snapshot.nodeMetrics)
-    .filter((n) => n.type !== 'client')
+    .filter((n) => hasCapacityPool(n.type))
     .map((n) => ({
       name: n.label.length > 14 ? `${n.label.slice(0, 12)}…` : n.label,
       utilizationPct: Number((n.utilization * 100).toFixed(1)),
@@ -60,7 +61,11 @@ export function ChartsPanel() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={snapshot.timeSeries}>
               <CartesianGrid stroke="var(--sl-border-subtle)" strokeDasharray="3 3" />
-              <XAxis dataKey="timeSec" tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} unit="s" />
+              <XAxis
+                dataKey="timeSec"
+                tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }}
+                unit="s"
+              />
               <YAxis tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} width={40} />
               <Tooltip contentStyle={tooltipStyle} />
               <Line
@@ -89,7 +94,11 @@ export function ChartsPanel() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={snapshot.timeSeries}>
               <CartesianGrid stroke="var(--sl-border-subtle)" strokeDasharray="3 3" />
-              <XAxis dataKey="timeSec" tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} unit="s" />
+              <XAxis
+                dataKey="timeSec"
+                tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }}
+                unit="s"
+              />
               <YAxis tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} width={42} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
@@ -130,8 +139,16 @@ export function ChartsPanel() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={snapshot.timeSeries}>
               <CartesianGrid stroke="var(--sl-border-subtle)" strokeDasharray="3 3" />
-              <XAxis dataKey="timeSec" tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} unit="s" />
-              <YAxis yAxisId="left" tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} width={38} />
+              <XAxis
+                dataKey="timeSec"
+                tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }}
+                unit="s"
+              />
+              <YAxis
+                yAxisId="left"
+                tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }}
+                width={38}
+              />
               <YAxis
                 yAxisId="right"
                 orientation="right"
@@ -174,23 +191,42 @@ export function ChartsPanel() {
         <h3 className="mb-2 text-xs font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
           Component Utilization (%)
         </h3>
-        <div className="h-44 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={utilizationData} layout="vertical" margin={{ left: 10, right: 16 }}>
-              <CartesianGrid stroke="var(--sl-border-subtle)" strokeDasharray="3 3" />
-              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }} unit="%" />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--sl-text-secondary)' }} width={96} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar
-                dataKey="utilizationPct"
-                name="Utilization %"
-                fill="var(--sl-accent-routing)"
-                radius={[0, 4, 4, 0]}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {utilizationData.length === 0 ? (
+          <div
+            className="flex h-44 items-center justify-center text-center text-xs"
+            style={{ color: 'var(--sl-text-muted)' }}
+          >
+            No capacity-pooled components (App Server, DB, Replica, Queue, Worker) in topology.
+          </div>
+        ) : (
+          <div className="h-44 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={utilizationData} layout="vertical" margin={{ left: 10, right: 16 }}>
+                <CartesianGrid stroke="var(--sl-border-subtle)" strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  domain={[0, 100]}
+                  tick={{ fontSize: 10, fill: 'var(--sl-text-muted)' }}
+                  unit="%"
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: 'var(--sl-text-secondary)' }}
+                  width={96}
+                />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar
+                  dataKey="utilizationPct"
+                  name="Utilization %"
+                  fill="var(--sl-accent-routing)"
+                  radius={[0, 4, 4, 0]}
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );

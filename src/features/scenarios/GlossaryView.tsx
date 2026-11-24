@@ -22,7 +22,10 @@ export function GlossaryView() {
   return (
     <main className="h-full overflow-y-auto p-6">
       <div className="mx-auto max-w-5xl space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-4" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+        <div
+          className="flex flex-wrap items-end justify-between gap-3 border-b pb-4"
+          style={{ borderColor: 'var(--sl-border-subtle)' }}
+        >
           <div>
             <h1 className="text-xl font-bold" style={{ color: 'var(--sl-text-primary)' }}>
               System Design Glossary
@@ -70,11 +73,20 @@ export function GlossaryView() {
                   <h2 className="text-sm font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
                     {entry.term}
                   </h2>
-                  <span className="rounded border px-1.5 py-0.5 text-[11px]" style={{ borderColor: 'var(--sl-border-subtle)', color: 'var(--sl-text-muted)' }}>
+                  <span
+                    className="rounded border px-1.5 py-0.5 text-[11px]"
+                    style={{
+                      borderColor: 'var(--sl-border-subtle)',
+                      color: 'var(--sl-text-muted)',
+                    }}
+                  >
                     {entry.category}
                   </span>
                 </div>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ color: 'var(--sl-text-secondary)' }}
+                >
                   {entry.summary}
                 </p>
                 {entry.formula && (
@@ -95,7 +107,10 @@ export function GlossaryView() {
               </div>
 
               {entry.relatedScenarioId && (
-                <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+                <div
+                  className="mt-3 pt-2 border-t"
+                  style={{ borderColor: 'var(--sl-border-subtle)' }}
+                >
                   <button
                     type="button"
                     onClick={() => {

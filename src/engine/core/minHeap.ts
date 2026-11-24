@@ -67,14 +67,22 @@ export class MinHeap<T> {
       if (left < len) {
         const leftItem = this.items[left];
         const smallestItem = this.items[smallest];
-        if (leftItem !== undefined && smallestItem !== undefined && this.compare(leftItem, smallestItem) < 0) {
+        if (
+          leftItem !== undefined &&
+          smallestItem !== undefined &&
+          this.compare(leftItem, smallestItem) < 0
+        ) {
           smallest = left;
         }
       }
       if (right < len) {
         const rightItem = this.items[right];
         const smallestItem = this.items[smallest];
-        if (rightItem !== undefined && smallestItem !== undefined && this.compare(rightItem, smallestItem) < 0) {
+        if (
+          rightItem !== undefined &&
+          smallestItem !== undefined &&
+          this.compare(rightItem, smallestItem) < 0
+        ) {
           smallest = right;
         }
       }

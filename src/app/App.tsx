@@ -117,7 +117,10 @@ export function App() {
       </div>
 
       {/* Diagnostic Status Banners */}
-      {(storageWarning || workerFallbackActive || simStatus === 'halted_safety' || errorMessage) && (
+      {(storageWarning ||
+        workerFallbackActive ||
+        simStatus === 'halted_safety' ||
+        errorMessage) && (
         <div
           role="status"
           className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-1.5 text-xs"
@@ -179,7 +182,10 @@ export function App() {
               <PanelLeft className="h-3.5 w-3.5" />
               Components
             </button>
-            <span className="hidden md:inline text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+            <span
+              className="hidden md:inline text-[11px]"
+              style={{ color: 'var(--sl-text-muted)' }}
+            >
               Full graph editing is optimized for desktop/tablet viewports
             </span>
             <button
@@ -282,7 +288,7 @@ export function App() {
                 className="flex items-center justify-between border-b px-2"
                 style={{ borderColor: 'var(--sl-border-subtle)' }}
               >
-                <Tabs.List className="flex items-center gap-1 overflow-x-auto text-xs">
+                <Tabs.List className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-xs">
                   {(
                     [
                       { id: 'overview', label: 'Overview', Icon: Activity },
@@ -304,7 +310,7 @@ export function App() {
                   ))}
                 </Tabs.List>
 
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1 pl-1">
                   <button
                     type="button"
                     onClick={() =>
@@ -328,7 +334,9 @@ export function App() {
                       setBottomDockSize(bottomDockSize === 'collapsed' ? 'normal' : 'collapsed')
                     }
                     aria-label={
-                      bottomDockSize === 'collapsed' ? 'Open telemetry dock' : 'Collapse telemetry dock'
+                      bottomDockSize === 'collapsed'
+                        ? 'Open telemetry dock'
+                        : 'Collapse telemetry dock'
                     }
                     className="rounded p-1 hover:bg-black/15"
                     style={{ color: 'var(--sl-text-secondary)' }}

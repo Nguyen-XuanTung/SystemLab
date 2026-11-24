@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, Zap } from 'lucide-react';
 import { COMPONENT_DEFINITIONS } from '@/engine/models/nodeRegistry';
 import { ComponentIcon } from '@/components/ui/ComponentIcon';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { formatPct } from '@/lib/format';
+import { formatPct, hasCapacityPool } from '@/lib/format';
 import { useSimulationStore } from '@/store/simulationStore';
 import { type CanvasFlowNode, useWorkspaceStore } from '@/store/workspaceStore';
 
@@ -164,12 +164,19 @@ function SystemNodeComponent({ id, data, selected }: NodeProps<CanvasFlowNode>) 
                 {nodeMetrics ? `${nodeMetrics.queueDepth}/${data.config.queueCapacity}` : '—'}
               </div>
             </div>
-          ) : (
+          ) : data.config.type === 'app_server' ||
+            data.config.type === 'database' ||
+            data.config.type === 'read_replica' ? (
             <div>
               <div style={{ color: 'var(--sl-text-muted)' }}>Queue</div>
               <div style={{ color: 'var(--sl-text-primary)' }}>
                 {nodeMetrics ? nodeMetrics.queueDepth : '—'}
               </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ color: 'var(--sl-text-muted)' }}>Queue</div>
+              <div style={{ color: 'var(--sl-text-primary)' }}>—</div>
             </div>
           )}
 
@@ -181,7 +188,9 @@ function SystemNodeComponent({ id, data, selected }: NodeProps<CanvasFlowNode>) 
               {nodeMetrics
                 ? data.config.type === 'api_gateway'
                   ? nodeMetrics.rateLimitedCount
-                  : formatPct(nodeMetrics.utilization)
+                  : hasCapacityPool(data.config.type)
+                    ? formatPct(nodeMetrics.utilization)
+                    : '—'
                 : '—'}
             </div>
           </div>

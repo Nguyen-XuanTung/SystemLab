@@ -59,18 +59,18 @@ Open the local URL printed by Vite (`http://localhost:5173`) in your browser.
 
 ## Built-in Scenarios
 
-| # | Scenario | Focus |
-|---|---|---|
-| 01 | Hello, System Design | Arrival rate, fixed service time, utilization, and request lifecycle |
-| 02 | Horizontal Scaling | Round-Robin vs. Least-In-Flight distribution across 3 app servers |
-| 03 | Caching Fundamentals | Probabilistic cache hit impact on database utilization and P95 latency |
-| 04 | Database Bottleneck | How narrow DB connection pools bottleneck stateless application scaling |
-| 05 | Rate Limiting | Token Bucket load shedding during periodic traffic bursts |
-| 06 | Asynchronous Processing | `async_ack` HTTP response latency vs. background worker job completion |
-| 07 | Traffic Spike & Backpressure | Step-load spike crossing cluster capacity and bounded queue drops |
-| 08 | Server Failure & Recovery | Scheduled server crash, health-aware failover, and recovery |
-| 09 | Circuit Breaker Protection | `CLOSED -> OPEN -> HALF-OPEN -> CLOSED` resilience transitions |
-| 10 | Read / Write Split | API Gateway routing reads to Read Replicas and writes to Primary DB |
+| #   | Scenario                     | Focus                                                                   |
+| --- | ---------------------------- | ----------------------------------------------------------------------- |
+| 01  | Hello, System Design         | Arrival rate, fixed service time, utilization, and request lifecycle    |
+| 02  | Horizontal Scaling           | Round-Robin vs. Least-In-Flight distribution across 3 app servers       |
+| 03  | Caching Fundamentals         | Probabilistic cache hit impact on database utilization and P95 latency  |
+| 04  | Database Bottleneck          | How narrow DB connection pools bottleneck stateless application scaling |
+| 05  | Rate Limiting                | Token Bucket load shedding during periodic traffic bursts               |
+| 06  | Asynchronous Processing      | `async_ack` HTTP response latency vs. background worker job completion  |
+| 07  | Traffic Spike & Backpressure | Step-load spike crossing cluster capacity and bounded queue drops       |
+| 08  | Server Failure & Recovery    | Scheduled server crash, health-aware failover, and recovery             |
+| 09  | Circuit Breaker Protection   | `CLOSED -> OPEN -> HALF-OPEN -> CLOSED` resilience transitions          |
+| 10  | Read / Write Split           | API Gateway routing reads to Read Replicas and writes to Primary DB     |
 
 ---
 
@@ -88,7 +88,7 @@ See [Architecture Documentation](docs/architecture/ARCHITECTURE.md) and [ADRs](d
 
 ## Simulation Model & Reproducibility
 
-Virtual simulation time (`VirtualClock`, ms) is the single source of truth. Changing UI playback speed (`0.25x` to `Fast-Run`) or telemetry batch size only paces wall-clock wall rendering and never alters discrete-event timestamps or random draws (`SplitMix32` -> `xoshiro128**`). Metrics reservoir sampling uses an isolated `rng.fork('metrics-reservoir')` stream so sampling never perturbs simulation traffic.
+Virtual simulation time (`VirtualClock`, ms) is the single source of truth. Changing UI playback speed (`0.25x` to `Fast-Run`) or telemetry batch size only paces wall-clock rendering and never alters discrete-event timestamps or random draws (`SplitMix32` -> `xoshiro128**`). Metrics reservoir sampling uses an isolated `rng.fork('metrics-reservoir')` stream so sampling never perturbs simulation traffic.
 
 Details and analytical proofs are documented in [Simulation Engine Specification](docs/architecture/SIMULATION_ENGINE.md) and [Simulation Validation](docs/verification/SIMULATION_VALIDATION.md).
 
@@ -106,15 +106,18 @@ Details and analytical proofs are documented in [Simulation Engine Specification
 
 ```bash
 npm run lint           # ESLint + strict src/engine/ purity checks
+npm run format:check   # Prettier formatting check across src/ and tests/
 npm run typecheck      # TypeScript strict type checking
-npm run test           # Unit, analytical (Tests A-H), schema & integration suites
+npm run test           # Unit, analytical (Tests A-H), invariant, schema & integration suites
 npm run test:coverage  # V8 coverage check (src/engine/ >= 85% lines, >= 80% branches)
-npm run test:e2e       # Playwright Chrome E2E workflow suite (after npm run build)
-npm run benchmark      # Deterministic DES engine benchmarks
+npm run test:e2e       # Playwright Chromium (Chrome / PLAYWRIGHT_CHANNEL=msedge) E2E suite (after build)
+npm run benchmark      # Controlled multi-run DES engine benchmarks (1 warmup + 5 timed runs)
 npm run build          # Typecheck + production Vite bundle
 ```
 
 Measured test, coverage, and security findings are available in:
+
+- [Independent Release Audit](INDEPENDENT_RELEASE_AUDIT.md)
 - [Simulation Validation](docs/verification/SIMULATION_VALIDATION.md)
 - [Test Report](docs/verification/TEST_REPORT.md)
 - [Security Review](docs/verification/SECURITY_REVIEW.md)
@@ -123,16 +126,16 @@ Measured test, coverage, and security findings are available in:
 
 ## Performance
 
-Measured locally on Windows 11 (`Node v24.14.0`, seed `42`):
+Measured locally on Windows 11 (`Node v24.14.0`, 1 warmup + 5 timed runs per case, distinct seeds `42`/`101`/`202`/`303`):
 
-| Workload | Topology | Wall Time | Throughput |
-|---|---|---|---|
-| 1,000 requests | 2 nodes, 1 edge | 14.98 ms | 253,798 events/sec |
-| 10,000 requests | 6-node 3-tier | 88.75 ms | 806,278 events/sec |
-| 100,000 requests (stretch) | 6-node 3-tier | 853.15 ms | 849,339 events/sec |
-| 5,000 requests | 25-node, 43-edge | 43.64 ms | 925,985 events/sec |
+| Workload                       | Topology         | Median Wall Time (Min–Max)   | DES Throughput       | Virtual Workload Rate |
+| ------------------------------ | ---------------- | ---------------------------- | -------------------- | --------------------- |
+| 1,000 requests (10s)           | 2 nodes, 1 edge  | 5.40 ms (4.15–6.64 ms)       | 703,459 events/sec   | 99.6 sim req/s        |
+| 10,000 requests (10s)          | 6-node 3-tier    | 58.95 ms (55.88–74.76 ms)    | 1,209,870 events/sec | 1,011.2 sim req/s     |
+| 100,000 requests (40s stretch) | 6-node 3-tier    | 709.34 ms (524.59–914.56 ms) | 1,023,249 events/sec | 2,506.5 sim req/s     |
+| 5,000 requests (10s)           | 25-node, 43-edge | 30.59 ms (29.67–38.46 ms)    | 1,331,976 events/sec | 501.9 sim req/s       |
 
-See [Performance Report](docs/verification/PERFORMANCE_REPORT.md).
+> **Metric note:** `DES Throughput (events/sec)` measures in-memory discrete-event kernel execution in Node; `Virtual Workload Rate (sim req/s)` is simulated model time throughput and must not be interpreted as production HTTP server RPS. See [Performance Report](docs/verification/PERFORMANCE_REPORT.md) for failure-injection, queue-saturation, IQR, and 20-run `WorkerSessionRunner` measurements.
 
 ---
 
@@ -150,6 +153,8 @@ SystemLab is an **educational simulation playground**, not a production capacity
 - [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md)
 - [Data Model](docs/architecture/DATA_MODEL.md)
 - [Product Research](docs/research/PRODUCT_RESEARCH.md)
+- [Independent Release Audit](INDEPENDENT_RELEASE_AUDIT.md)
+- [Release Notes v1.0.0](docs/RELEASE_NOTES_v1.0.0.md)
 
 ---
 

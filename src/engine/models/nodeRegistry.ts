@@ -1,12 +1,7 @@
 import type { ComponentType, NodeConfig } from './types';
 
 export type NodeCategory =
-  | 'clients'
-  | 'networking'
-  | 'compute'
-  | 'caching'
-  | 'storage'
-  | 'messaging';
+  'clients' | 'networking' | 'compute' | 'caching' | 'storage' | 'messaging';
 
 export type ConfigFieldType = 'number' | 'integer' | 'select' | 'boolean';
 
@@ -164,9 +159,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
       simplifications: [
         'Models open-loop arrivals (arrivals do not automatically slow down when the server stalls unless rate-limited or dropped).',
       ],
-      furtherReading: [
-        'Open vs. Closed Load Models — Bianca Schroeder et al., NSDI',
-      ],
+      furtherReading: ['Open vs. Closed Load Models — Bianca Schroeder et al., NSDI'],
     },
   },
 
@@ -232,7 +225,10 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
       simplifications: [
         'Health checks reflect instantaneous node failure state rather than delayed periodic probe intervals.',
       ],
-      furtherReading: ['Nginx Load Balancing Algorithms', 'The Power of Two Choices — Mitzenmacher'],
+      furtherReading: [
+        'Nginx Load Balancing Algorithms',
+        'The Power of Two Choices — Mitzenmacher',
+      ],
     },
   },
 
@@ -408,7 +404,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
         min: 0,
         max: 5,
         step: 1,
-        helpText: 'Bounded local retry attempts on transient failure (preserves logical request ID).',
+        helpText:
+          'Bounded local retry attempts on transient failure (preserves logical request ID).',
       },
       {
         key: 'retryDelayMs',
@@ -428,7 +425,13 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
         'Core processing unit whose worker pool size and service latency determine sustainable throughput (Little’s Law).',
       howModeled:
         'G/G/c/K queue: finite worker pool (c) + finite FIFO queue (K). Tracks time-weighted utilization, queue waiting time, and bounded retries without double-counting logical requests.',
-      keyParameters: ['concurrency', 'queueCapacity', 'serviceTimeMs', 'distribution', 'maxRetries'],
+      keyParameters: [
+        'concurrency',
+        'queueCapacity',
+        'serviceTimeMs',
+        'distribution',
+        'maxRetries',
+      ],
       failureModes: [
         'Queue buildup and tail latency spike when arrival rate approaches or exceeds c / E[S].',
         'Retry amplification worsening downstream congestion during partial failures.',
@@ -665,7 +668,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
           { label: 'Async Ack (Decoupled)', value: 'async_ack' },
           { label: 'Sync Wait (RPC over Queue)', value: 'sync_wait' },
         ],
-        helpText: 'Async Ack completes HTTP caller on enqueue; Sync Wait blocks until worker finishes.',
+        helpText:
+          'Async Ack completes HTTP caller on enqueue; Sync Wait blocks until worker finishes.',
       },
     ],
     education: {
@@ -749,8 +753,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
       },
     ],
     education: {
-      whatItIs:
-        'Asynchronous consumer pool pulling queued tasks from an upstream Message Queue.',
+      whatItIs: 'Asynchronous consumer pool pulling queued tasks from an upstream Message Queue.',
       whyItExists:
         'Executes heavy work (emails, video transcoding, billing, webhooks) off the critical request path.',
       howModeled:
@@ -914,8 +917,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
       },
     ],
     education: {
-      whatItIs:
-        'Read-only database follower dedicated to scaling read-heavy workloads.',
+      whatItIs: 'Read-only database follower dedicated to scaling read-heavy workloads.',
       whyItExists:
         'Offloads read traffic from the primary database so writes and critical transactions stay responsive.',
       howModeled:

@@ -6,7 +6,10 @@ export function AboutView() {
       <div className="mx-auto max-w-4xl space-y-6 text-xs leading-relaxed">
         <section
           className="rounded-lg border p-5"
-          style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border-default)' }}
+          style={{
+            backgroundColor: 'var(--sl-bg-surface)',
+            borderColor: 'var(--sl-border-default)',
+          }}
         >
           <div className="flex items-center gap-3">
             <img src="./logo.svg" alt="SystemLab" className="h-9 w-9" />
@@ -14,23 +17,29 @@ export function AboutView() {
               <h1 className="text-lg font-bold" style={{ color: 'var(--sl-text-primary)' }}>
                 SystemLab — Design. Simulate. Break. Understand.
               </h1>
-              <p className="font-mono-tabular text-[11px]" style={{ color: 'var(--sl-text-muted)' }}>
+              <p
+                className="font-mono-tabular text-[11px]"
+                style={{ color: 'var(--sl-text-muted)' }}
+              >
                 Local-First Deterministic Discrete-Event Simulator · Engine v{ENGINE_VERSION}
               </p>
             </div>
           </div>
 
           <p className="mt-3" style={{ color: 'var(--sl-text-secondary)' }}>
-            SystemLab is an open-source, browser-native distributed systems simulation playground for
-            computer science students, learners, and software engineers. Instead of drawing static
-            architecture diagrams, every node executes inside a deterministic discrete-event
+            SystemLab is an open-source, browser-native distributed systems simulation playground
+            for computer science students, learners, and software engineers. Instead of drawing
+            static architecture diagrams, every node executes inside a deterministic discrete-event
             simulation (DES) kernel inside a Web Worker.
           </p>
         </section>
 
         <section
           className="rounded-lg border p-5 space-y-2.5"
-          style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border-default)' }}
+          style={{
+            backgroundColor: 'var(--sl-bg-surface)',
+            borderColor: 'var(--sl-border-default)',
+          }}
         >
           <h2 className="text-sm font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
             Explicit Model Assumptions &amp; Limitations
@@ -65,7 +74,10 @@ export function AboutView() {
 
         <section
           className="rounded-lg border p-5 space-y-2.5"
-          style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border-default)' }}
+          style={{
+            backgroundColor: 'var(--sl-bg-surface)',
+            borderColor: 'var(--sl-border-default)',
+          }}
         >
           <h2 className="text-sm font-semibold" style={{ color: 'var(--sl-text-primary)' }}>
             Keyboard Shortcuts

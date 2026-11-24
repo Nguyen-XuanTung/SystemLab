@@ -29,10 +29,27 @@ describe('Component Registry & VirtualClock', () => {
         { id: 'c', label: 'Client', config: clientDef.defaultConfig() },
         { id: 'n', label: targetDef.defaultLabel, config: targetDef.defaultConfig() },
       ];
-      const edges = [{ id: 'e1', source: 'c', target: 'n', latencyMs: 1, routeType: 'default' as const }];
-      if (targetDef.allowOutgoing && type !== 'app_server' && type !== 'message_queue' && type !== 'worker') {
-        nodes.push({ id: 'db', label: 'DB', config: COMPONENT_DEFINITIONS.database.defaultConfig() });
-        edges.push({ id: 'e2', source: 'n', target: 'db', latencyMs: 1, routeType: 'default' as const });
+      const edges = [
+        { id: 'e1', source: 'c', target: 'n', latencyMs: 1, routeType: 'default' as const },
+      ];
+      if (
+        targetDef.allowOutgoing &&
+        type !== 'app_server' &&
+        type !== 'message_queue' &&
+        type !== 'worker'
+      ) {
+        nodes.push({
+          id: 'db',
+          label: 'DB',
+          config: COMPONENT_DEFINITIONS.database.defaultConfig(),
+        });
+        edges.push({
+          id: 'e2',
+          source: 'n',
+          target: 'db',
+          latencyMs: 1,
+          routeType: 'default' as const,
+        });
       }
       const res = validateGraph({ nodes, edges });
       expect(res.valid).toBe(true);
