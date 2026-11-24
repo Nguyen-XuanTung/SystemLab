@@ -142,7 +142,9 @@ function SystemNodeComponent({ id, data, selected }: NodeProps<CanvasFlowNode>) 
           style={{ borderColor: 'var(--sl-border-subtle)' }}
         >
           <div>
-            <div style={{ color: 'var(--sl-text-muted)' }}>In</div>
+            <div style={{ color: 'var(--sl-text-muted)' }}>
+              {data.config.type === 'client' ? 'Sent' : 'In'}
+            </div>
             <div style={{ color: 'var(--sl-text-primary)' }}>
               {nodeMetrics ? nodeMetrics.arrivals : '—'}
             </div>

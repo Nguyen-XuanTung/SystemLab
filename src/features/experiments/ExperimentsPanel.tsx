@@ -27,7 +27,6 @@ function formatDelta(base: number | null, cand: number | null, unit = '', lowerI
     return { text: '—', color: 'var(--sl-text-muted)' };
   }
   const diff = cand - base;
-  const pct = base !== 0 ? (diff / Math.abs(base)) * 100 : 0;
   const sign = diff > 0 ? '+' : '';
   const improved = lowerIsBetter ? diff < 0 : diff > 0;
   const regressed = lowerIsBetter ? diff > 0 : diff < 0;
@@ -39,8 +38,10 @@ function formatDelta(base: number | null, cand: number | null, unit = '', lowerI
         : regressed
           ? 'var(--sl-accent-danger)'
           : 'var(--sl-text-secondary)';
+  const pctStr =
+    Math.abs(base) > 1e-6 ? ` (${sign}${((diff / Math.abs(base)) * 100).toFixed(1)}%)` : '';
   return {
-    text: `${sign}${diff.toFixed(1)}${unit} (${sign}${pct.toFixed(1)}%)`,
+    text: `${sign}${diff.toFixed(1)}${unit}${pctStr}`,
     color,
   };
 }

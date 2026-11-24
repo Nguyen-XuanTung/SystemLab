@@ -38,7 +38,9 @@ export function ArchitectureCanvas() {
 
   const rfNodes = useWorkspaceStore((s) => s.rfNodes);
   const rfEdges = useWorkspaceStore((s) => s.rfEdges);
+  const projectId = useWorkspaceStore((s) => s.project.id);
   const snapToGrid = useWorkspaceStore((s) => s.snapToGrid);
+  const bottomDockSize = useWorkspaceStore((s) => s.bottomDockSize);
   const visMode = useWorkspaceStore((s) => s.visMode);
   const addNode = useWorkspaceStore((s) => s.addNode);
   const addEdge = useWorkspaceStore((s) => s.addEdge);
@@ -206,6 +208,14 @@ export function ArchitectureCanvas() {
     undo,
   ]);
 
+  // Refit canvas cleanly when switching projects or resizing bottom dock
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      reactFlow.fitView({ padding: 0.28, duration: 150 });
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [bottomDockSize, projectId, reactFlow]);
+
   return (
     <div
       ref={containerRef}
@@ -239,7 +249,7 @@ export function ArchitectureCanvas() {
         snapToGrid={snapToGrid}
         snapGrid={[16, 16]}
         fitView
-        fitViewOptions={{ padding: 0.24 }}
+        fitViewOptions={{ padding: 0.28 }}
         deleteKeyCode={null}
         proOptions={{ hideAttribution: true }}
       >
@@ -250,18 +260,21 @@ export function ArchitectureCanvas() {
           color="var(--sl-grid-dot)"
         />
         <Controls showInteractive={false} />
-        <MiniMap
-          pannable
-          zoomable
-          nodeColor={() => 'var(--sl-border-strong)'}
-          maskColor="color-mix(in srgb, var(--sl-bg-canvas) 65%, transparent)"
-        />
+        {bottomDockSize !== 'expanded' && (
+          <MiniMap
+            pannable
+            zoomable
+            style={{ width: 128, height: 76 }}
+            nodeColor={() => 'var(--sl-border-strong)'}
+            maskColor="color-mix(in srgb, var(--sl-bg-canvas) 65%, transparent)"
+          />
+        )}
       </ReactFlow>
 
       {/* Sampled traffic visual disclosure badge */}
       {simStatus === 'running' && (
         <div
-          className="pointer-events-none absolute top-3 left-3 z-10 rounded border px-2.5 py-1 text-[11px]"
+          className="pointer-events-none absolute top-3 left-12 z-10 rounded border px-2.5 py-1 text-[11px]"
           style={{
             backgroundColor: 'var(--sl-bg-surface)',
             borderColor: 'var(--sl-border-default)',

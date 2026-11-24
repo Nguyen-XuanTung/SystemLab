@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Edge, Node } from '@xyflow/react';
+import type { Edge, Node, NodeChangeset } from '@xyflow/react';
 import type {
   ComponentType,
   NodeConfig,
@@ -166,6 +166,7 @@ export interface WorkspaceState {
   addNode: (type: ComponentType, position?: { x: number; y: number }) => string;
   updateNodeLabel: (nodeId: string, label: string) => void;
   updateNodeConfig: (nodeId: string, config: NodeConfig) => void;
+  applyRfNodeChanges: (changes: NodeChangeset<CanvasFlowNode>) => void;
   updateNodePositions: (updates: Array<{ id: string; position: { x: number; y: number } }>, recordHistory: boolean) => void;
   duplicateNode: (nodeId: string) => string | null;
   deleteNode: (nodeId: string) => void;
@@ -280,29 +281,33 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
 
     hydrate: async () => {
       const stored = await listProjects();
+      const canAdoptStored = get().saveStatus === 'saved' && !get().hydrated;
       if (stored.length > 0) {
         const latest = stored[0]!;
-        set({
-          projects: stored,
-          project: latest,
-          rfNodes: toFlowNodes(latest.nodes),
-          rfEdges: toFlowEdges(latest.edges),
-          validation: computeValidation(latest),
-          selectedNodeId: latest.nodes[0]?.id ?? null,
-          storageWarning: getStorageWarning(),
-          hydrated: true,
-        });
+        if (canAdoptStored) {
+          set({
+            projects: stored,
+            project: latest,
+            rfNodes: toFlowNodes(latest.nodes),
+            rfEdges: toFlowEdges(latest.edges),
+            validation: computeValidation(latest),
+            selectedNodeId: latest.nodes[0]?.id ?? null,
+            storageWarning: getStorageWarning(),
+            hydrated: true,
+          });
+        } else {
+          set({
+            projects: stored,
+            storageWarning: getStorageWarning(),
+            hydrated: true,
+          });
+        }
       } else {
-        const seeded = createInitialProject();
-        await saveProject(seeded);
+        const curProj = get().project;
+        await saveProject(curProj);
         const list = await listProjects();
         set({
           projects: list,
-          project: seeded,
-          rfNodes: toFlowNodes(seeded.nodes),
-          rfEdges: toFlowEdges(seeded.edges),
-          validation: computeValidation(seeded),
-          selectedNodeId: seeded.nodes[0]?.id ?? null,
           storageWarning: getStorageWarning(),
           hydrated: true,
         });
@@ -434,11 +439,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
     },
 
     resetAllLocalStorage: async () => {
+      if (autosaveTimer) {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+      }
       await clearAllLocalData();
       const fresh = createInitialProject();
       await saveProject(fresh);
       const list = await listProjects();
-      set({ projects: list, tutorialDismissed: false, tutorialStep: 0 });
+      set({ projects: list, tutorialDismissed: false, tutorialStep: 0, hydrated: true });
       persistPrefs({ tutorialDismissed: false });
       replaceActiveProject(fresh, true);
     },
@@ -478,6 +487,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
       const cur = get().project;
       const nodes = cur.nodes.map((n) => (n.id === nodeId ? { ...n, config } : n));
       applyProjectUpdate({ ...cur, nodes }, true);
+    },
+
+    applyRfNodeChanges: (changes) => {
+      set((s) => ({
+        rfNodes: changes.applyTo(s.rfNodes),
+      }));
     },
 
     updateNodePositions: (updates, recordHistory) => {
