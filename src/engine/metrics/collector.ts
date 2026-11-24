@@ -155,6 +155,14 @@ export class MetricsCollector {
     this.processedEvents += 1;
   }
 
+  getProcessedEventCount(): number {
+    return this.processedEvents;
+  }
+
+  getInFlightCount(): number {
+    return Math.max(0, this.generated - this.succeeded - this.failed - this.timedOut);
+  }
+
   recordGenerated(isBackgroundJob: boolean): void {
     if (!isBackgroundJob) {
       this.generated += 1;

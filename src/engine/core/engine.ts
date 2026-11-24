@@ -381,7 +381,7 @@ export class SimulationEngine {
     this.status = 'running';
 
     // Enforce safety limits: maxEvents
-    const nextProcessed = this.collector.getGlobalMetrics(this.clock.nowMs).processedEvents + 1;
+    const nextProcessed = this.collector.getProcessedEventCount() + 1;
     if (nextProcessed > this.config.safetyLimits.maxEvents) {
       this.haltSafety(
         `Safety ceiling reached: processed events exceeded ${this.config.safetyLimits.maxEvents}.`,
@@ -547,8 +547,7 @@ export class SimulationEngine {
     this.collector.recordTimeSeriesBucket(ev.timestampMs, this.collectNodeInputs());
     const nextTick = ev.timestampMs + this.collector.bucketMs;
     // Keep ticking through durationMs or while requests remain in flight during drain
-    const metrics = this.collector.getGlobalMetrics(ev.timestampMs);
-    if (nextTick <= this.config.durationMs || (this.config.drainOnEnd && metrics.inFlight > 0)) {
+    if (nextTick <= this.config.durationMs || (this.config.drainOnEnd && this.collector.getInFlightCount() > 0)) {
       this.scheduleNextMetricsTick(nextTick);
     }
   }
@@ -584,8 +583,7 @@ export class SimulationEngine {
     if (ev.timestampMs >= this.config.durationMs - 1e-6) return;
 
     const cfg = rt.node.config;
-    const currentGlobal = this.collector.getGlobalMetrics(ev.timestampMs);
-    if (currentGlobal.inFlight >= this.config.safetyLimits.maxInFlight) {
+    if (this.collector.getInFlightCount() >= this.config.safetyLimits.maxInFlight) {
       this.haltSafety(
         `Safety ceiling reached: in-flight requests exceeded ${this.config.safetyLimits.maxInFlight}.`,
       );
