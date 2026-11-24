@@ -55,7 +55,7 @@
 
 **Lời nói gợi ý:**
 > *"Khi bấm vào một request cụ thể, em có thể soi từng hop với timestamp chính xác tới mili-giây ảo để tìm đúng nguyên nhân request chết ở đâu.*
-> *Về mặt kỹ thuật, trong quá trình phát triển em từng tối ưu một nút thắt khiến engine giảm từ vượt timeout 5 giây xuống chạy 100.000 request trong khoảng 0.7 giây, phủ unit/analytical/integration test với Vitest và E2E Chrome thực bằng Playwright, đồng thời chặn prototype pollution khi import file JSON. Em rất sẵn sàng trao đổi sâu hơn về phần `SimulationEngine` hoặc Web Worker fencing nếu anh/chị quan tâm!"*
+> *Về mặt kỹ thuật, trong quá trình phát triển em từng tối ưu một nút thắt khiến engine giảm từ vượt timeout 5 giây xuống chạy 100.000 request trong khoảng 0.85 giây, phủ unit/analytical/integration test với Vitest và E2E Chrome thực bằng Playwright, đồng thời chặn prototype pollution khi import file JSON. Em rất sẵn sàng trao đổi sâu hơn về phần `SimulationEngine` hoặc Web Worker fencing nếu anh/chị quan tâm!"*
 
 ---
 

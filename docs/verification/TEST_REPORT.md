@@ -13,7 +13,7 @@
 | ESLint & Engine Purity | `npm run lint` | **PASS** (0 errors, 0 warnings) | React Hooks, TS imports, `src/engine/` purity guard |
 | Unit & Analytical + Integration | `npm run test` | **PASS** (14 files, 57 / 57 tests) | Engine core, Tests A–H, 10 components, faults, validator, safety limits, R-7 metrics, schemas, Dexie persistence, worker protocol, 10 built-in scenarios, React workspace flows |
 | V8 Code Coverage | `npm run test:coverage` | **PASS** (thresholds met) | `90.80%` stmts, `81.94%` branches, `97.44%` funcs, `94.25%` lines across `src/engine/`, `src/schemas/`, `src/features/scenarios/` |
-| Browser E2E (Playwright) | `npm run test:e2e` | **PASS** (1 comprehensive E2E journey, 2.1s, 0 console/page errors) | Scenario load, run/pause/resume, Chaos Lab live node failure, Experiment Studio save + comparison, Recharts rendering, JSON export/import, page reload persistence, invalid graph/input blocking, theme toggle |
+| Browser E2E (Playwright) | `npm run test:e2e` | **PASS** (1 comprehensive E2E journey, 3.1s test / 6.5s total, 0 console/page errors) | Scenario load, run/pause/resume, Chaos Lab live node failure, Experiment Studio save + comparison, Recharts rendering, JSON export/import, page reload persistence, invalid graph/input blocking, theme toggle |
 
 ---
 

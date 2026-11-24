@@ -127,10 +127,10 @@ Measured locally on Windows 11 (`Node v24.14.0`, seed `42`):
 
 | Workload | Topology | Wall Time | Throughput |
 |---|---|---|---|
-| 1,000 requests | 2 nodes, 1 edge | 13.68 ms | 277,906 events/sec |
-| 10,000 requests | 6-node 3-tier | 63.26 ms | 1,131,187 events/sec |
-| 100,000 requests (stretch) | 6-node 3-tier | 676.62 ms | 1,070,929 events/sec |
-| 5,000 requests | 25-node, 43-edge | 32.84 ms | 1,230,525 events/sec |
+| 1,000 requests | 2 nodes, 1 edge | 14.98 ms | 253,798 events/sec |
+| 10,000 requests | 6-node 3-tier | 88.75 ms | 806,278 events/sec |
+| 100,000 requests (stretch) | 6-node 3-tier | 853.15 ms | 849,339 events/sec |
+| 5,000 requests | 25-node, 43-edge | 43.64 ms | 925,985 events/sec |
 
 See [Performance Report](docs/verification/PERFORMANCE_REPORT.md).
 

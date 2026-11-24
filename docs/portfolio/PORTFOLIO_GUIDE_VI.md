@@ -42,10 +42,10 @@
    - Tính phân vị p50/p95/p99 bằng **R-7 linear interpolation** trên latency reservoir đã sắp xếp.
 3. **Tối ưu hiệu năng thực tế (root-cause fix đã commit):**
    - Trong quá trình tối ưu engine, việc gọi `getGlobalMetrics()` bên trong từng vòng `step()`, `handleMetricsTick()`, `handleRequestCreated()` từng gây sắp xếp lại reservoir liên tục (khiến suite 10 kịch bản vượt ngưỡng timeout >5s). Sau khi chuyển sang hàm O(1) `getProcessedEventCount()` và `getInFlightCount()`, bộ unit test chạy lại gọn gàng và benchmark cho thấy engine xử lý:
-     - **1,000 requests:** `~13.68 ms`
-     - **10,000 requests:** `~63.26 ms`
-     - **100,000 requests:** `~676.62 ms`
-     - **25-node topology (5,000 reqs):** `~32.84 ms`
+     - **1,000 requests:** `14.98 ms` (`3,801` events)
+     - **10,000 requests:** `88.75 ms` (`71,554` events)
+     - **100,000 requests:** `853.15 ms` (`724,610` events, `~849k events/s`)
+     - **25-node topology (5,000 reqs):** `43.64 ms` (`40,406` events)
      - Toàn bộ kịch bản benchmark đều bảo toàn request conservation (`conserved: true`).
 4. **Chất lượng kiểm thử & bảo mật:**
    - **Unit + Integration (Vitest):** 14 file test, 57 tests, độ bao phủ ~`90.80%` statements, `81.94%` branches, `97.44%` functions, `94.25%` lines.
@@ -91,11 +91,11 @@ Xem kịch bản lời thoại chi tiết từng giây tại [DEMO_SCRIPT_VI.md]
 - **SystemLab — Interactive Distributed Systems Simulator** (`TypeScript`, `React 19`, `Web Workers`, `@xyflow/react`, `Zustand`, `Vitest`, `Playwright`)
   - Architected and shipped a local-first discrete-event simulation playground using a pure TypeScript engine (`src/engine/`) strictly isolated from React/DOM and offloaded to a Web Worker with monotonic `runId` fencing and automatic main-thread fallback.
   - Designed deterministic experiment reproduction using a `SplitMix32`/`xoshiro128**` PRNG (`SeededRng`), bounded-memory R-7 percentile metrics (`50k` latency reservoir), DAG cycle validation (Kahn's algorithm), and `50`-step undo/redo persistence via IndexedDB (`Dexie`).
-  - Eliminated a hot-path sorting bottleneck inside the DES step loop (verified via unit & benchmark runs reaching `~63 ms` for `10k` requests and `~677 ms` for `100k` requests while preserving strict request conservation).
+  - Eliminated a hot-path sorting bottleneck inside the DES step loop (verified via unit & benchmark runs reaching `~89 ms` for `10k` requests and `~853 ms` for `100k` requests while preserving strict request conservation).
   - Verified reliability across unit, integration, analytical queueing, and headless Chrome E2E suites (`57` Vitest tests, `>90%` statement coverage) plus Zod import hardening against prototype pollution (`stripDangerousKeys`, `2 MB` cap).
 
 ### Lựa chọn 2 — Rút gọn 2–3 dòng cho CV thực tập sinh (1 trang)
-- **SystemLab — Deterministic System Design Simulator** (*Open-Source Personal Project, AI-Assisted Workflow*): Built a browser-based discrete-event system simulator (`TypeScript`, `React`, `Web Workers`, `Vitest`, `Playwright`) featuring 10 modeled infrastructure nodes, fault injection, request-hop tracing, and A/B experiment comparison; isolated a pure TS DES engine (`100k` requests in `<700 ms`) with verified analytical queueing invariants and prototype-pollution-safe JSON schema persistence.
+- **SystemLab — Deterministic System Design Simulator** (*Open-Source Personal Project, AI-Assisted Workflow*): Built a browser-based discrete-event system simulator (`TypeScript`, `React`, `Web Workers`, `Vitest`, `Playwright`) featuring 10 modeled infrastructure nodes, fault injection, request-hop tracing, and A/B experiment comparison; isolated a pure TS DES engine (`100k` requests in `<900 ms`) with verified analytical queueing invariants and prototype-pollution-safe JSON schema persistence.
 
 *(Mẹo phỏng vấn: Nếu nhà tuyển dụng hỏi có dùng AI khi làm không, hãy trả lời thẳng thắn: bạn đóng vai trò Product Architect / Reviewer định nghĩa invariants, kiểm chứng lỗi hiệu năng, review từng boundary bảo mật/Worker/test và dùng AI assistant tăng tốc code & tài liệu — điều quan trọng nhất là bạn giải thích được từng dòng trong `engine.ts` và chứng minh qua test suite.)*
 
