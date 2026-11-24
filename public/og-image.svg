@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none" role="img" aria-label="SystemLab Open Graph Preview">
+  <rect width="1200" height="630" fill="#0B0F14" />
+  <g opacity="0.25" stroke="#243040" stroke-width="1">
+    <path d="M0 90H1200M0 180H1200M0 270H1200M0 360H1200M0 450H1200M0 540H1200" />
+    <path d="M120 0V630M240 0V630M360 0V630M480 0V630M600 0V630M720 0V630M840 0V630M960 0V630M1080 0V630" />
+  </g>
+  <rect x="84" y="88" width="80" height="80" rx="18" fill="#111822" stroke="#253041" stroke-width="2" />
+  <path d="M104 128H120L130 112H144" stroke="#3B82F6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M120 128L130 144H144" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="102" cy="128" r="6" fill="#3B82F6" />
+  <circle cx="120" cy="128" r="5" fill="#8B5CF6" />
+  <circle cx="146" cy="112" r="6" fill="#F59E0B" />
+  <circle cx="146" cy="144" r="6" fill="#10B981" />
+  <text x="188" y="132" fill="#E6EDF3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="44" font-weight="700">SystemLab</text>
+  <text x="188" y="164" fill="#8B98A9" font-family="ui-monospace, Consolas, monospace" font-size="18">Design. Simulate. Break. Understand.</text>
+  <text x="84" y="255" fill="#E6EDF3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="38" font-weight="600">Interactive Discrete-Event</text>
+  <text x="84" y="305" fill="#E6EDF3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="38" font-weight="600">Distributed Systems Playground</text>
+  <rect x="84" y="368" width="210" height="110" rx="12" fill="#121923" stroke="#3B82F6" stroke-width="2" />
+  <text x="108" y="408" fill="#93C5FD" font-family="ui-monospace, monospace" font-size="15">TRAFFIC GEN</text>
+  <text x="108" y="446" fill="#E6EDF3" font-family="ui-monospace, monospace" font-size="24" font-weight="700">120 RPS</text>
+  <path d="M294 423H384" stroke="#475569" stroke-width="3" stroke-dasharray="6 6" />
+  <circle cx="340" cy="423" r="6" fill="#3B82F6" />
+  <rect x="384" y="368" width="220" height="110" rx="12" fill="#121923" stroke="#8B5CF6" stroke-width="2" />
+  <text x="408" y="408" fill="#C4B5FD" font-family="ui-monospace, monospace" font-size="15">LOAD BALANCER</text>
+  <text x="408" y="446" fill="#E6EDF3" font-family="ui-monospace, monospace" font-size="22" font-weight="700">Least-In-Flight</text>
+  <path d="M604 423L694 378" stroke="#10B981" stroke-width="3" />
+  <path d="M604 423L694 468" stroke="#F59E0B" stroke-width="3" />
+  <rect x="694" y="324" width="210" height="92" rx="12" fill="#121923" stroke="#10B981" stroke-width="2" />
+  <text x="718" y="360" fill="#6EE7B7" font-family="ui-monospace, monospace" font-size="15">APP SERVER 1</text>
+  <text x="718" y="394" fill="#E6EDF3" font-family="ui-monospace, monospace" font-size="20" font-weight="700">P95: 42.1 ms</text>
+  <rect x="694" y="434" width="210" height="92" rx="12" fill="#121923" stroke="#F59E0B" stroke-width="2" />
+  <text x="718" y="470" fill="#FCD34D" font-family="ui-monospace, monospace" font-size="15">CACHE (PROBABILISTIC)</text>
+  <text x="718" y="504" fill="#E6EDF3" font-family="ui-monospace, monospace" font-size="20" font-weight="700">Hit Rate: 80%</text>
+  <text x="84" y="575" fill="#64748B" font-family="ui-monospace, monospace" font-size="16">Deterministic Seeded DES · Web Worker Execution · Chaos Lab · Experiment Studio</text>
+</svg>

@@ -1,0 +1,70 @@
+:root {
+  /* Dark theme is the default SystemLab engineering workspace palette */
+  --sl-bg-canvas: #0b0f14;
+  --sl-bg-surface: #111722;
+  --sl-bg-elevated: #17202e;
+  --sl-bg-hover: #1e293b;
+  --sl-bg-input: #0d131c;
+
+  --sl-border-subtle: #1f2a3a;
+  --sl-border-default: #2b394e;
+  --sl-border-strong: #3d516e;
+
+  --sl-text-primary: #e6edf3;
+  --sl-text-secondary: #9fb0c7;
+  --sl-text-muted: #708299;
+
+  /* Semantic node & telemetry category tokens */
+  --sl-accent-traffic: #3b82f6;
+  --sl-accent-routing: #8b5cf6;
+  --sl-accent-compute: #10b981;
+  --sl-accent-cache: #f59e0b;
+  --sl-accent-messaging: #06b6d4;
+  --sl-accent-storage: #94a3b8;
+  --sl-accent-danger: #ef4444;
+  --sl-accent-warning: #f59e0b;
+  --sl-accent-success: #10b981;
+
+  --sl-focus-ring: #60a5fa;
+  --sl-grid-dot: #223044;
+  --sl-edge-default: #4b607d;
+
+  --sl-font-sans: 'IBM Plex Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  --sl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --sl-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.light {
+  --sl-bg-canvas: #f4f6f9;
+  --sl-bg-surface: #ffffff;
+  --sl-bg-elevated: #f8fafc;
+  --sl-bg-hover: #eef2f7;
+  --sl-bg-input: #ffffff;
+
+  --sl-border-subtle: #e2e8f0;
+  --sl-border-default: #cbd5e1;
+  --sl-border-strong: #94a3b8;
+
+  --sl-text-primary: #0f172a;
+  --sl-text-secondary: #334155;
+  --sl-text-muted: #64748b;
+
+  --sl-accent-traffic: #2563eb;
+  --sl-accent-routing: #7c3aed;
+  --sl-accent-compute: #059669;
+  --sl-accent-cache: #d97706;
+  --sl-accent-messaging: #0891b2;
+  --sl-accent-storage: #475569;
+  --sl-accent-danger: #dc2626;
+  --sl-accent-warning: #d97706;
+  --sl-accent-success: #059669;
+
+  --sl-focus-ring: #2563eb;
+  --sl-grid-dot: #cbd5e1;
+  --sl-edge-default: #64748b;
+
+  --sl-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --sl-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+}

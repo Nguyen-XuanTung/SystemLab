@@ -1,0 +1,101 @@
+@import '@xyflow/react/dist/style.css';
+@import 'tailwindcss';
+@import './tokens.css';
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--sl-bg-canvas);
+    color: var(--sl-text-primary);
+    font-family: var(--sl-font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  [role='button'],
+  select,
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--sl-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.font-mono-tabular {
+  font-family: var(--sl-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom subtle scrollbars matching engineering theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-border-default) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--sl-border-default);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* React Flow theme integration */
+.react-flow__background {
+  background-color: var(--sl-bg-canvas);
+}
+
+.react-flow__controls {
+  border: 1px solid var(--sl-border-default);
+  background: var(--sl-bg-surface);
+  box-shadow: var(--sl-shadow-sm);
+}
+
+.react-flow__controls-button {
+  background: var(--sl-bg-surface);
+  color: var(--sl-text-primary);
+  border-bottom: 1px solid var(--sl-border-subtle);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--sl-bg-hover);
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.react-flow__minimap {
+  background: var(--sl-bg-surface);
+  border: 1px solid var(--sl-border-default);
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Repository Overview
 
-SystemLab is a local-first, deterministic discrete-event system design simulator built with TypeScript, React, `@xyflow/react`, Zustand, Recharts, Dexie, and Tailwind CSS v4.
+SystemLab is a local-first, deterministic discrete-event system design simulator built with TypeScript, React, `@xyflow/react`, Zustand, Recharts, Dexie, Zod, and Tailwind CSS v4.
 
 ## Non-Negotiable Architecture Rules
 
@@ -31,6 +31,7 @@ npm run test:coverage  # Run tests with V8 coverage thresholds
 npm run test:e2e       # Run Playwright E2E suite against Chrome
 npm run benchmark      # Run deterministic engine performance benchmarks
 npm run build          # Typecheck + Vite production build
+npm run preview        # Preview production build locally
 ```
 
 ## Coding Conventions
