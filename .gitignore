@@ -1,0 +1,29 @@
+# Dependencies & build output
+node_modules/
+dist/
+dist-ssr/
+
+# Coverage & test artifacts
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Local environment & logs
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Local AI tracking (also excluded in .git/info/exclude)
+.ai-local/
