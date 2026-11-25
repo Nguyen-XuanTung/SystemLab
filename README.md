@@ -132,10 +132,10 @@ Measured locally on Windows 11 (`Node v24.14.0`, `1 warmup + 5 timed runs` per c
 
 | Workload                       | Topology         | Median Wall Time (Min–Max)   | DES Throughput       | Virtual Workload Rate |
 | ------------------------------ | ---------------- | ---------------------------- | -------------------- | --------------------- |
-| 1,000 requests (10s)           | 2 nodes, 1 edge  | 5.40 ms (4.15–6.64 ms)       | 703,459 events/sec   | 99.6 sim req/s        |
-| 10,000 requests (10s)          | 6-node 3-tier    | 58.95 ms (55.88–74.76 ms)    | 1,209,870 events/sec | 1,011.2 sim req/s     |
-| 100,000 requests (40s stretch) | 6-node 3-tier    | 709.34 ms (524.59–914.56 ms) | 1,023,249 events/sec | 2,506.5 sim req/s     |
-| 5,000 requests (10s)           | 25-node, 43-edge | 30.59 ms (29.67–38.46 ms)    | 1,331,976 events/sec | 501.9 sim req/s       |
+| 1,000 requests (10s)           | 2 nodes, 1 edge  | 3.85 ms (3.51–7.60 ms)       | 986,606 events/sec   | 99.6 sim req/s        |
+| 10,000 requests (10s)          | 6-node 3-tier    | 43.85 ms (39.08–48.31 ms)    | 1,626,408 events/sec | 1,011.2 sim req/s     |
+| 100,000 requests (40s stretch) | 6-node 3-tier    | 464.90 ms (457.03–477.66 ms) | 1,561,258 events/sec | 2,506.5 sim req/s     |
+| 5,000 requests (10s)           | 25-node, 43-edge | 20.89 ms (20.34–21.86 ms)    | 1,950,126 events/sec | 501.9 sim req/s       |
 
 > **Metric note:** `DES Throughput (events/sec)` measures in-memory discrete-event kernel execution in Node; `Virtual Workload Rate (sim req/s)` measures simulated model-time arrival rate. **Neither figure represents production HTTP server RPS.** See [Performance Report](docs/verification/PERFORMANCE_REPORT.md) for failure/recovery, queue saturation, IQR, and 20-iteration `WorkerSessionRunner` checks.
 

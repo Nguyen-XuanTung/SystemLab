@@ -42,10 +42,10 @@
    - Tính phân vị p50/p95/p99 bằng **R-7 linear interpolation** trên latency reservoir đã sắp xếp.
 3. **Tối ưu hiệu năng thực tế & benchmark đa lần chạy:**
    - Trong quá trình tối ưu engine, việc gọi `getGlobalMetrics()` bên trong từng vòng `step()`, `handleMetricsTick()`, `handleRequestCreated()` từng gây sắp xếp lại reservoir liên tục (khiến suite 10 kịch bản vượt ngưỡng timeout >5s). Sau khi chuyển sang hàm O(1) `getProcessedEventCount()` và `getInFlightCount()`, kết hợp các bản sửa lỗi bảo toàn request & CB epoch trong audit, benchmark kiểm soát (`1 warmup + 5 timed runs` mỗi kịch bản) đạt median:
-     - **1,000 requests (seed 42):** median `5.40 ms` (`4.15–6.64 ms`, `3,801` events, `703k` events/s, `99.6` sim req/s)
-     - **10,000 requests (seed 101):** median `58.95 ms` (`55.88–74.76 ms`, `71,325` events, `1.21M` events/s, `1,011.2` sim req/s)
-     - **100,000 requests stretch (seed 202):** median `709.34 ms` (`524.59–914.56 ms`, `725,836` events, `1.02M` events/s, `2,506.5` sim req/s)
-     - **25-node topology · 5,000 reqs (seed 303):** median `30.59 ms` (`29.67–38.46 ms`, `40,743` events, `1.33M` events/s)
+     - **1,000 requests (seed 42):** median `3.85 ms` (`3.51–7.60 ms`, `3,801` events, `987k` events/s, `99.6` sim req/s)
+     - **10,000 requests (seed 101):** median `43.85 ms` (`39.08–48.31 ms`, `71,325` events, `1.63M` events/s, `1,011.2` sim req/s)
+     - **100,000 requests stretch (seed 202):** median `464.90 ms` (`457.03–477.66 ms`, `725,836` events, `1.56M` events/s, `2,506.5` sim req/s)
+     - **25-node topology · 5,000 reqs (seed 303):** median `20.89 ms` (`20.34–21.86 ms`, `40,743` events, `1.95M` events/s)
      - Toàn bộ kịch bản (gồm failure/recovery và queue saturation) đều bảo toàn request (`allConserved: true`). _(Lưu ý: `events/s` là thông lượng discrete-event trong Node, `sim req/s` là tốc độ tải ảo trong thời gian mô phỏng, không phải throughput HTTP production)._
 4. **Chất lượng kiểm thử & bảo mật:**
    - **Unit + Integration (Vitest):** `15` file test, `69` tests (bao gồm 10 kịch bản cốt lõi + 4 kịch bản VCraft Case Study), độ bao phủ `91.86%` statements, `82.64%` branches, `98.02%` functions, `95.07%` lines (trên `src/engine/`, `src/schemas/`, `src/features/scenarios/`).
@@ -93,12 +93,12 @@ Xem kịch bản lời thoại chi tiết từng giây tại [DEMO_SCRIPT_VI.md]
 - **SystemLab — Interactive Distributed Systems Simulator** (`TypeScript`, `React 19`, `Web Workers`, `@xyflow/react`, `Zustand`, `Vitest`, `Playwright`)
   - Architected and shipped a local-first discrete-event simulation playground using a pure TypeScript engine (`src/engine/`) strictly isolated from React/DOM and offloaded to a Web Worker with monotonic `runId` fencing and automatic main-thread fallback.
   - Designed deterministic experiment reproduction using a `SplitMix32`/`xoshiro128**` PRNG (`SeededRng`), bounded-memory R-7 percentile metrics (`50k` latency reservoir), DAG cycle validation (Kahn's algorithm), and `50`-step undo/redo persistence via IndexedDB (`Dexie`).
-  - Eliminated a hot-path sorting bottleneck inside the DES step loop (verified via multi-run benchmarks reaching median `~59 ms` for `10k` requests and `~709 ms` for `100k` requests while preserving strict request conservation).
+  - Eliminated a hot-path sorting bottleneck inside the DES step loop (verified via multi-run benchmarks reaching median `~44 ms` for `10k` requests and `~465 ms` for `100k` requests while preserving strict request conservation).
   - Verified reliability across unit, integration, analytical queueing, Python demo runner, and headless Chrome/Edge E2E suites (`69` Vitest tests, `91.86%` statement coverage on engine/schema/scenario targets; `5` Playwright E2E flows; `5` Python runner lifecycle tests) plus Zod import hardening against prototype pollution (`stripDangerousKeys`, depth cap `64`, `2 MB` size limit).
 
 ### Lựa chọn 2 — Rút gọn 2–3 dòng cho CV thực tập sinh (1 trang)
 
-- **SystemLab — Deterministic System Design Simulator** (_Open-Source Personal Project, AI-Assisted Workflow_): Built a browser-based discrete-event system simulator (`TypeScript`, `React`, `Web Workers`, `Vitest`, `Playwright`) featuring 10 modeled infrastructure nodes, fault injection, request-hop tracing, a 4-part real-world VCraft case study, and A/B experiment comparison; isolated a pure TS DES engine (`100k` requests in `~709 ms` median) with verified analytical queueing invariants and prototype-pollution-safe JSON schema persistence.
+- **SystemLab — Deterministic System Design Simulator** (_Open-Source Personal Project, AI-Assisted Workflow_): Built a browser-based discrete-event system simulator (`TypeScript`, `React`, `Web Workers`, `Vitest`, `Playwright`) featuring 10 modeled infrastructure nodes, fault injection, request-hop tracing, a 4-part real-world VCraft case study, and A/B experiment comparison; isolated a pure TS DES engine (`100k` requests in `~465 ms` median) with verified analytical queueing invariants and prototype-pollution-safe JSON schema persistence.
 
 _(Mẹo phỏng vấn: Nếu nhà tuyển dụng hỏi có dùng AI khi làm không, hãy trả lời thẳng thắn: bạn đóng vai trò Product Architect / Reviewer định nghĩa invariants, kiểm chứng lỗi hiệu năng, review từng boundary bảo mật/Worker/test và dùng AI assistant tăng tốc code & tài liệu — điều quan trọng nhất là bạn giải thích được từng dòng trong `engine.ts` và chứng minh qua test suite.)_
 
