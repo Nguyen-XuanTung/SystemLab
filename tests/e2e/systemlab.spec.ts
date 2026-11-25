@@ -25,6 +25,9 @@ test.describe('SystemLab End-to-End Critical Flows', () => {
   }) => {
     const { consoleErrors, pageErrors } = attachErrorTrackers(page);
     await page.goto('/');
+    const expectedPort = process.env.SYSTEMLAB_E2E_PORT || '5202';
+    expect(new URL(page.url()).port).toBe(expectedPort);
+    await expect(page).toHaveTitle(/SystemLab/i);
     await dismissTutorialIfVisible(page);
 
     // Create blank architecture -> Run disabled
@@ -44,6 +47,8 @@ test.describe('SystemLab End-to-End Critical Flows', () => {
       page.getByText(/requires at least one outgoing connection/i).first(),
     ).toBeVisible();
     await page.keyboard.press('Escape');
+    // Wait for React Flow's fitView transition (~250ms) to finish before reading handle coordinates
+    await page.waitForTimeout(350);
 
     // Connect Client outgoing handle -> App Server incoming handle via pointer drag
     const sourceHandle = page
@@ -280,6 +285,57 @@ test.describe('SystemLab End-to-End Critical Flows', () => {
     await expect(page.getByText(/System Design Glossary/i)).toBeVisible();
     await page.getByRole('button', { name: /^About$/i }).click();
     await expect(page.getByText(/Explicit Model Assumptions/i)).toBeVisible();
+
+    expect(consoleErrors).toEqual([]);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('5. VCraft Architecture Case Study: load Current & Scaled scenarios, compare fairly in Experiment Studio, and verify real metrics', async ({
+    page,
+  }) => {
+    const { consoleErrors, pageErrors } = attachErrorTrackers(page);
+    await page.goto('/');
+
+    // Enter via guided quick-start "Explore VCraft Architecture" action
+    await page.getByRole('button', { name: /explore vcraft architecture/i }).click();
+    await dismissTutorialIfVisible(page);
+    await expect(page.getByTestId('canvas-node-vcraft-proxy')).toBeVisible();
+    await expect(page.getByTestId('canvas-node-vcraft-mysql')).toBeVisible();
+
+    // Run VC-1 Current Architecture
+    await page.getByLabel(/playback speed/i).selectOption('100');
+    await page.getByRole('button', { name: /run simulation/i }).click();
+    await expect(page.getByText(/Conservation:/i)).toBeVisible({ timeout: 8000 });
+
+    await page.getByRole('tab', { name: /experiments/i }).click();
+    await page.getByLabel(/experiment snapshot name/i).fill('VCraft Current Baseline');
+    await page.getByRole('button', { name: /save snapshot/i }).click();
+    await expect(page.getByText('VCraft Current Baseline').first()).toBeVisible();
+
+    // Navigate to Scenario Library, filter to VCraft collection, load VC-3 Scaled Architecture
+    await page.getByRole('button', { name: /^Scenarios$/i }).click();
+    await page.getByRole('button', { name: /VCraft Case Study/i }).click();
+    await expect(page.getByText('VCraft — Scaled Architecture (Proposed)')).toBeVisible();
+
+    const scaledCard = page
+      .locator('article')
+      .filter({ hasText: 'VCraft — Scaled Architecture (Proposed)' });
+    await scaledCard.getByRole('button', { name: /open in workspace/i }).click();
+    await expect(page.getByTestId('canvas-node-vcraft-cache')).toBeVisible();
+
+    // Run VC-3 Scaled Architecture and switch to Overview tab to verify Conservation
+    await page.getByRole('tab', { name: /overview/i }).click();
+    await page.getByLabel(/playback speed/i).selectOption('100');
+    await page.getByRole('button', { name: /run simulation/i }).click();
+    await expect(page.getByText(/Conservation:/i)).toBeVisible({ timeout: 8000 });
+
+    await page.getByRole('tab', { name: /experiments/i }).click();
+    await page.getByLabel(/experiment snapshot name/i).fill('VCraft Scaled Proposed');
+    await page.getByRole('button', { name: /save snapshot/i }).click();
+
+    await expect(page.getByText(/Baseline vs\. Candidate Comparison/i)).toBeVisible();
+    await expect(page.getByText(/Comparison Fairness Notice/i)).toHaveCount(0);
+    await expect(page.locator('.recharts-wrapper').first()).toBeVisible();
 
     expect(consoleErrors).toEqual([]);
     expect(pageErrors).toEqual([]);

@@ -20,6 +20,7 @@ import {
   buildExperimentRecordFromSnapshot,
   safeParseExperimentJson,
 } from '@/schemas/projectSchema';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 describe('IndexedDB Persistence & Experiment Round-Trip', () => {
   beforeEach(async () => {
@@ -108,5 +109,20 @@ describe('IndexedDB Persistence & Experiment Round-Trip', () => {
       orderSpy.mockRestore();
       clearMemoryFallbackForTests();
     }
+  });
+
+  it('flushes unsaved project edits to IndexedDB before switching to a demo scenario', async () => {
+    const store = useWorkspaceStore.getState();
+    store.newBlankProject();
+    const blankId = useWorkspaceStore.getState().project.id;
+    store.renameProject('Unsaved Custom Draft');
+    expect(useWorkspaceStore.getState().saveStatus).toBe('saving');
+
+    store.loadScenario('vcraft-01-current-architecture');
+    // Allow microtask flush to settle in fake-indexeddb
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    const persistedDraft = await getProject(blankId);
+    expect(persistedDraft?.name).toBe('Unsaved Custom Draft');
   });
 });
