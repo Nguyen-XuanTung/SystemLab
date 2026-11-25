@@ -52,6 +52,22 @@ export function computeFairnessWarnings(
       'Client traffic rates, patterns, or read ratios differ between runs (expected if comparing traffic spikes, otherwise compare cautiously).',
     );
   }
+
+  const baseSpikes = baseline.faultTimeline
+    .filter((f) => f.type === 'traffic_spike')
+    .map((f) => `${f.targetId}:${f.startAtMs}:${f.durationMs ?? 'null'}:${f.value}`)
+    .sort()
+    .join('|');
+  const candSpikes = candidate.faultTimeline
+    .filter((f) => f.type === 'traffic_spike')
+    .map((f) => `${f.targetId}:${f.startAtMs}:${f.durationMs ?? 'null'}:${f.value}`)
+    .sort()
+    .join('|');
+  if (baseSpikes !== candSpikes) {
+    warnings.push(
+      'Scheduled traffic spike faults differ between runs (expected when comparing normal vs. peak traffic).',
+    );
+  }
   return warnings;
 }
 

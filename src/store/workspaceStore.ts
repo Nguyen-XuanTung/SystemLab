@@ -236,7 +236,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
     scheduleAutosave(stamped);
   };
 
-  const replaceActiveProject = (proj: SystemLabProject, clearHistory = true): void => {
+  const replaceActiveProject = (
+    proj: SystemLabProject,
+    clearHistory = true,
+    skipFlushPrevious = false,
+  ): void => {
+    const prev = get().project;
+    if (!skipFlushPrevious && prev.id !== proj.id && get().saveStatus !== 'saved') {
+      void saveProject(prev);
+    }
     const clean: SystemLabProject = structuredClone(proj);
     set({
       project: clean,
@@ -431,11 +439,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
         await saveProject(fallback);
         const list = await listProjects();
         set({ projects: list });
-        replaceActiveProject(fallback, true);
+        replaceActiveProject(fallback, true, true);
       } else {
         set({ projects: remaining });
         if (get().project.id === projectId) {
-          replaceActiveProject(remaining[0]!, true);
+          replaceActiveProject(remaining[0]!, true, true);
         }
       }
     },
@@ -465,7 +473,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => {
       const list = await listProjects();
       set({ projects: list, tutorialDismissed: false, tutorialStep: 0, hydrated: true });
       persistPrefs({ tutorialDismissed: false });
-      replaceActiveProject(fresh, true);
+      replaceActiveProject(fresh, true, true);
     },
 
     addNode: (type, position) => {

@@ -1,18 +1,18 @@
-import { ArrowRight, CheckCircle2, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Layers, Play, X } from 'lucide-react';
 import { useExperimentStore } from '@/store/experimentStore';
 import { useSimulationStore } from '@/store/simulationStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 
 const STEPS = [
   {
-    title: '1. Explore or Load a Scenario',
-    body: 'Start with "Hello, System Design" on the canvas, or browse Scenarios to load Caching, Database Bottleneck, Rate Limiting, or Server Failure topologies.',
-    actionLabel: 'Open Scenarios',
+    title: '1. Understand & Choose a Topology',
+    body: 'SystemLab runs a deterministic discrete-event simulation inside your browser Web Worker (no backend or API key). Start from the workspace topology, browse 14 built-in scenarios, or explore the VCraft case study.',
+    actionLabel: 'Start Exploring',
   },
   {
     title: '2. Run the Simulation',
     body: 'Press Run (or Space) to stream virtual requests from the Client through the architecture. Watch live queue depth, latency percentiles, and utilization update.',
-    actionLabel: 'Run Simulation Now',
+    actionLabel: 'Run Your First Simulation',
   },
   {
     title: '3. Tune Parameters or Inject a Fault',
@@ -34,12 +34,14 @@ export function GuidedTutorial() {
   const setActiveView = useWorkspaceStore((s) => s.setActiveView);
   const setActiveBottomTab = useWorkspaceStore((s) => s.setActiveBottomTab);
   const setBottomDockSize = useWorkspaceStore((s) => s.setBottomDockSize);
+  const loadScenario = useWorkspaceStore((s) => s.loadScenario);
   const project = useWorkspaceStore((s) => s.project);
   const visMode = useWorkspaceStore((s) => s.visMode);
   const validation = useWorkspaceStore((s) => s.validation);
 
   const snapshot = useSimulationStore((s) => s.snapshot);
   const run = useSimulationStore((s) => s.run);
+  const reset = useSimulationStore((s) => s.reset);
   const expCount = useExperimentStore((s) => s.experiments.length);
 
   if (tutorialDismissed) return null;
@@ -52,12 +54,25 @@ export function GuidedTutorial() {
     expCount >= 2,
   ][tutorialStep];
 
+  const handleRunFirstSimulation = (): void => {
+    setActiveView('workspace');
+    if (validation.valid) {
+      run(project, visMode);
+      setTutorialStep(2);
+    }
+  };
+
+  const handleExploreVcraft = (): void => {
+    reset();
+    loadScenario('vcraft-01-current-architecture');
+    setTutorialStep(1);
+  };
+
   const handleStepAction = (): void => {
     if (tutorialStep === 0) {
       setActiveView('scenarios');
     } else if (tutorialStep === 1) {
-      setActiveView('workspace');
-      if (validation.valid) run(project, visMode);
+      handleRunFirstSimulation();
     } else if (tutorialStep === 2) {
       setActiveView('workspace');
       setActiveBottomTab('chaos');
@@ -108,6 +123,30 @@ export function GuidedTutorial() {
       <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
         {stepMeta.body}
       </p>
+
+      {tutorialStep === 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            disabled={!validation.valid}
+            onClick={handleRunFirstSimulation}
+            className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-40"
+            style={{ backgroundColor: 'var(--sl-btn-run-bg)' }}
+          >
+            <Play className="h-3 w-3" />
+            Run Your First Simulation
+          </button>
+          <button
+            type="button"
+            onClick={handleExploreVcraft}
+            className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-semibold text-white"
+            style={{ backgroundColor: 'var(--sl-btn-routing-bg)' }}
+          >
+            <Layers className="h-3 w-3" />
+            Explore VCraft Architecture
+          </button>
+        </div>
+      )}
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <button
