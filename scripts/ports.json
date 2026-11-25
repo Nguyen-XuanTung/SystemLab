@@ -1,0 +1,9 @@
+{
+  "host": "127.0.0.1",
+  "devPort": 5200,
+  "demoPort": 5200,
+  "previewPort": 5201,
+  "e2ePort": 5202,
+  "reservedExternalPorts": [5173, 5174, 15173, 18080, 8080, 3307],
+  "appIdentityMarker": "SystemLab — Design. Simulate. Break. Understand."
+}

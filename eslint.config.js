@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'coverage', 'node_modules', 'playwright-report', 'test-results'],
+    ignores: ['dist', 'coverage', 'node_modules', 'playwright-report', 'test-results', '.runtime'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -26,6 +26,18 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+    },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+      },
     },
   },
   {

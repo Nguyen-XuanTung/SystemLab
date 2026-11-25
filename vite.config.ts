@@ -2,6 +2,7 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { PORTS, resolvePort } from './scripts/ports';
 
 export default defineConfig({
   base: process.env.VITE_BASE_PATH ?? './',
@@ -10,6 +11,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
     },
+  },
+  server: {
+    host: PORTS.host,
+    port: resolvePort('SYSTEMLAB_DEV_PORT', PORTS.devPort),
+    strictPort: true,
+  },
+  preview: {
+    host: PORTS.host,
+    port: resolvePort('SYSTEMLAB_PREVIEW_PORT', PORTS.previewPort),
+    strictPort: true,
   },
   worker: {
     format: 'es',

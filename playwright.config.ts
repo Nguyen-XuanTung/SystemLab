@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { PORTS, resolvePort } from './scripts/ports';
 
-const localChannel = process.env.CI ? undefined : (process.env.PLAYWRIGHT_CHANNEL || 'chrome');
+const localChannel = process.env.CI ? undefined : process.env.PLAYWRIGHT_CHANNEL || 'chrome';
+const e2ePort = resolvePort('SYSTEMLAB_E2E_PORT', PORTS.e2ePort);
+const baseURL = `http://${PORTS.host}:${e2ePort}`;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -10,7 +13,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     viewport: { width: 1440, height: 900 },
@@ -26,9 +29,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
+    command: `npm run preview -- --host ${PORTS.host} --port ${e2ePort} --strictPort`,
+    url: baseURL,
+    reuseExistingServer: false,
     timeout: 60_000,
   },
 });

@@ -27,3 +27,6 @@ Thumbs.db
 
 # Local AI tracking (also excluded in .git/info/exclude)
 .ai-local/
+
+# Demo runner local runtime state and logs
+.runtime/
