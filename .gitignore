@@ -30,3 +30,7 @@ Thumbs.db
 
 # Demo runner local runtime state and logs
 .runtime/
+
+# Python caches
+__pycache__/
+*.py[cod]

@@ -7,8 +7,12 @@
 - `src/schemas/` — Zod schema validation (`projectSchema.ts`), prototype-pollution key sanitization, and snapshot builder.
 - `src/store/` — Zustand stores (`workspaceStore.ts`, `simulationStore.ts`, `experimentStore.ts`).
 - `src/features/` — Feature slices (`canvas`, `node-library`, `workspace`, `monitoring`, `fault-injection`, `experiments`, `scenarios`, `persistence`).
-- `tests/` — Unit, analytical (`Tests A-H`), schema/security, integration, and Playwright E2E suites.
-- `scripts/benchmark.ts` — Reproducible CLI performance benchmark harness.
+- `tests/` — Unit, analytical (`Tests A-H`), invariant, schema/security, integration, Python runner (`tests/runner/`), and Playwright E2E suites.
+- `scripts/` — Single-source port config (`ports.json`, `ports.ts`), local demo runner (`run_demo.py`), screenshot generator (`capture-screenshots.mjs`), and deterministic benchmark harness (`benchmark.ts`).
+
+### Isolated Port Policy
+
+SystemLab enforces `strictPort: true` on `127.0.0.1`: `5200` (dev & local demo), `5201` (`npm run preview`), `5202` (Playwright E2E, `reuseExistingServer: false`). Reserved external ports (`5173`, `5174`, `15173`, `18080`, `8080`, `3307`) are rejected without silent fallback.
 
 ---
 
@@ -28,9 +32,11 @@
 
 ```bash
 npm run lint           # Must pass with zero engine purity violations
+npm run format:check   # Prettier style compliance across src/ and tests/
 npm run typecheck      # Strict TypeScript check
+npm run test:runner    # Python unittest suite for scripts/run_demo.py
 npm run test:coverage  # Runs Vitest with V8 coverage enforcement on src/engine/
-npm run test:e2e       # Runs Playwright Chrome suite against preview server
+npm run test:e2e       # Runs Playwright Chromium suite against isolated preview server (:5202)
 npm run benchmark      # Measures wall-clock & event throughput
 npm run build          # Production Vite build + tsc
 ```

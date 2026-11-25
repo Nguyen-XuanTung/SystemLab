@@ -35,6 +35,13 @@ jobs:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
 
+      - name: Verify static subpath bundle and zero localhost dependencies
+        run: |
+          test -f dist/index.html
+          grep -q "/${{ github.event.repository.name }}/assets/" dist/index.html
+          ls dist/assets/simulation.worker-*.js
+          ! grep -rn "localhost:5200" dist/
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

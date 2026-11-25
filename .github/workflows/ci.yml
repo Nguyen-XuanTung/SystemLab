@@ -35,6 +35,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Python demo runner safety tests
+        run: python3 -m unittest discover -s tests/runner -v
+
       - name: Unit, analytical, and integration tests with coverage
         run: npm run test:coverage
 
@@ -45,6 +48,13 @@ jobs:
         env:
           VITE_BASE_PATH: /SystemLab/
         run: npm run build
+
+      - name: Verify GitHub Pages subpath assets and zero localhost leaks
+        run: |
+          test -f dist/index.html
+          grep -q "/SystemLab/assets/" dist/index.html
+          ls dist/assets/simulation.worker-*.js
+          ! grep -rn "localhost:5200" dist/
 
   e2e:
     runs-on: ubuntu-latest

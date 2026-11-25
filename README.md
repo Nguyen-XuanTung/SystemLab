@@ -2,62 +2,104 @@
 
 **Design. Simulate. Break. Understand.**
 
-An interactive, local-first distributed systems and system design simulation playground built for computer science students, learners, and software engineers.
-
----
-
-## Overview
-
-SystemLab bridges the gap between static architecture diagram editors and heavy production load-testing clusters. Every component on the canvas executes inside a pure TypeScript **discrete-event simulation (DES) kernel** running off the main thread in a Web Worker, driven by a monotonic virtual clock (`VirtualClock`), a binary min-heap scheduler (`MinHeap`), and a deterministic seeded PRNG (`SplitMix32` -> `xoshiro128**`).
-
-No backend database, user account, API key, or external AI service is required.
+An interactive, local-first distributed systems and discrete-event simulation (DES) playground built for computer science students, learners, and software engineers.
 
 ![SystemLab Workspace Overview](docs/assets/workspace-overview.png)
 
 ---
 
-## Why SystemLab Exists
+## Quick Start
+
+**Prerequisites:** Python `3.10+`, Node.js `20+` (verified on `v24.14.0`), and npm `10+`.
+
+```bash
+git clone https://github.com/Nguyen-XuanTung/SystemLab.git
+cd SystemLab
+python scripts/run_demo.py
+```
+
+Open the official local URL: **`http://localhost:5200/`**.
+
+Useful runner commands:
+
+```bash
+python scripts/run_demo.py --status    # Check managed server status and PID
+python scripts/run_demo.py --stop      # Gracefully stop only SystemLab's managed process
+python scripts/run_demo.py --rebuild   # Force clean production build and start on :5200
+python scripts/run_demo.py --dev       # Start Vite HMR dev server on :5200
+```
+
+**Alternative manual Node workflow:**
+
+```bash
+npm ci
+npm run dev       # Starts Vite development server on http://127.0.0.1:5200/
+```
+
+- **No AI API required**
+- **No backend server required**
+- **No Docker required**
+- **Local-first storage** (IndexedDB + JSON import/export)
+
+---
+
+## Port Configuration & Multi-Project Isolation
+
+SystemLab binds strictly to loopback (`127.0.0.1`, `strictPort: true`, zero silent port fallback) via [scripts/ports.json](scripts/ports.json) and avoids external project ports (`5173`, `5174`, `15173`, `18080`, `8080`, `3307`):
+
+| Purpose                                                 | Host & Port      | Configured By                                 | Notes                                                       |
+| ------------------------------------------------------- | ---------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| **Development (`npm run dev` / `--dev`)**               | `127.0.0.1:5200` | `vite.config.ts` (`SYSTEMLAB_DEV_PORT`)       | Do not run simultaneously with preview demo on `:5200`      |
+| **Official Local Demo (`scripts/run_demo.py`)**         | `127.0.0.1:5200` | `scripts/ports.json` (`SYSTEMLAB_DEMO_PORT`)  | Serves static production `dist/` via Vite preview           |
+| **Standalone Production Preview (`npm run preview`)**   | `127.0.0.1:5201` | `vite.config.ts` (`SYSTEMLAB_PREVIEW_PORT`)   | Separate from `:5200` demo runner                           |
+| **Playwright E2E Isolated Server (`npm run test:e2e`)** | `127.0.0.1:5202` | `playwright.config.ts` (`SYSTEMLAB_E2E_PORT`) | `reuseExistingServer: false` — never reuses unknown servers |
+
+---
+
+## Overview & Why SystemLab Exists
 
 1. **Static diagrams cannot show dynamics:** Drawing a Load Balancer or Cache in a diagramming tool does not reveal how tail latency reacts when database connection pools saturate or cache hit ratios drop.
-2. **Production infrastructure is slow for conceptual iteration:** Spinning up containers and load generators takes minutes per topology change; SystemLab lets learners test hypotheses in seconds directly in a browser tab.
-3. **Reproducibility matters:** Every experiment stores its topology snapshot, random seed, horizon, engine version, and fault schedule so architectures can be compared fairly side-by-side.
+2. **Production clusters are slow for conceptual iteration:** Spinning up containers and load generators takes minutes per topology change; SystemLab executes discrete-event simulations deterministically in milliseconds inside a browser Web Worker.
+3. **Reproducibility matters:** Every experiment records its topology, random seed, horizon, engine version, and fault schedule so configurations can be compared fairly side-by-side.
+
+![Monitoring Charts](docs/assets/monitoring-charts.png)
 
 ---
 
 ## Core Features
 
-- **Pure Deterministic DES Engine (`src/engine/`):** Monotonic virtual clock, `(timestampMs, priority, sequence)` tie-breaking, exact time-weighted utilization integrals, R-7 percentile interpolation, and strict logical request conservation (`generated === succeeded + failed + timedOut + inFlight`).
-- **10 Simulated Component Models:** Client / Traffic Generator (`constant`, `poisson`, `bursty`, `ramp`, `step`), Load Balancer (`round_robin`, `random`, `least_in_flight`, health-aware), API Gateway (Token Bucket rate limiter + read/write routing split), Application Server (bounded worker pool + FIFO queue + bounded local retries), Probabilistic Cache, Primary Database, Message Queue (`async_ack` / `sync_wait`), Background Worker, Circuit Breaker (`CLOSED` / `OPEN` / `HALF-OPEN`), and Read Replica.
-- **Architecture Graph Editor (`@xyflow/react`):** Drag-and-drop & click-to-add palette, directional edges with propagation delay and read/write route labels, Dagre auto-layout, snap-to-grid, 50-step undo/redo, context menu, keyboard shortcuts, and blocking/non-blocking DAG validation.
-- **Real-Time Telemetry & Observability:** Live KPIs (`Mean`, `P50`, `P95`, `P99`, showing `—` when unpopulated), sortable per-node table, Recharts virtual-time charts, bounded 500-event log, hop-by-hop Request Trace modal, and sampled SVG edge traffic indicators honoring `prefers-reduced-motion`.
-- **Chaos Lab Fault Injection:** Manual live fault injection/recovery and scheduled fault timelines (`node_failure`, `latency_spike`, `capacity_drop`, `traffic_spike`, `packet_drop`, `cache_cold_start`, `edge_latency_spike`, `edge_failure`).
-- **Experiment Studio:** Save immutable snapshots, compare Baseline vs. Candidate deltas, and receive automatic fairness warnings whenever seeds, horizons, or workloads differ.
-- **Local-First Persistence:** IndexedDB workspace & experiment storage via Dexie, autosave, and prototype-pollution-safe, Zod-validated JSON import/export (2 MB cap).
-
-![Monitoring Charts](docs/assets/monitoring-charts.png)
+- **Pure Deterministic DES Engine (`src/engine/`):** Monotonic `VirtualClock`, `(timestampMs, priority, sequence)` tie-breaking on a binary `MinHeap`, exact time-weighted utilization integrals, R-7 percentile interpolation, and strict logical request conservation (`generated === succeeded + failed + timedOut + inFlight`).
+- **10 Simulated Component Models:** Client / Traffic Generator (`constant`, `poisson`, `bursty`, `ramp`, `step`), Load Balancer (`round_robin`, `random`, `least_in_flight`, health-aware), API Gateway (Token Bucket rate limiter + read/write split), Application Server (bounded worker pool + FIFO queue + bounded retries), Probabilistic Cache, Primary Database, Message Queue (`async_ack` / `sync_wait`), Background Worker, Circuit Breaker (`CLOSED` / `OPEN` / `HALF-OPEN`), and Read Replica.
+- **Architecture Graph Editor (`@xyflow/react`):** Drag-and-drop & click-to-add palette, directional links with latency/route labels, Dagre auto-layout, snap-to-grid, 50-step undo/redo, context menu, and DAG validation.
+- **Real-Time Telemetry & Request Tracing:** Live KPIs (`Mean`, `P50`, `P95`, `P99`, showing `—` at zero samples), sortable node table, Recharts virtual-time charts, bounded 500-event log, and hop-by-hop Request Trace modal.
+- **Chaos Lab Fault Injection:** Manual live fault injection/recovery and scheduled timelines (`node_failure`, `latency_spike`, `capacity_drop`, `traffic_spike`, `packet_drop`, `cache_cold_start`, `edge_latency_spike`, `edge_failure`).
+- **Experiment Studio:** Save immutable snapshots in IndexedDB, compare Baseline vs. Candidate deltas, and receive automatic fairness notices if seeds, horizons, client rates, or `traffic_spike` schedules differ.
+- **Safe Local Persistence:** IndexedDB storage via Dexie with memory fallback banner and Zod-validated JSON import/export (2 MB cap, 64-level depth guard, prototype-pollution key stripping).
 
 ![Chaos Lab Failure & Recovery](docs/assets/chaos-lab-fault.png)
 
-![Experiment Studio Comparison](docs/assets/experiment-comparison.png)
+---
+
+## VCraft — Real-World Architecture Case Study
+
+SystemLab includes a dedicated 4-part case study modeled after [`Nguyen-XuanTung/vcraft-XUANTUNG`](https://github.com/Nguyen-XuanTung/vcraft-XUANTUNG/tree/TungBeng) (branch `TungBeng`):
+
+| ID     | Scenario                                | Architecture Type   | Focus                                                                   |
+| ------ | --------------------------------------- | ------------------- | ----------------------------------------------------------------------- |
+| `VC-1` | VCraft — Current Architecture           | Verified Current    | Steady 60 RPS flow across Nginx SPA Proxy → Spring Boot → MySQL 8.4     |
+| `VC-2` | VCraft — Peak Traffic                   | Verified Current    | 3x craft-fair surge saturating backend & DB connection pools            |
+| `VC-3` | VCraft — Scaled Architecture (Proposed) | **Proposed Scaled** | Hypothetical LB + 2× Spring Boot + Public Read Cache comparison         |
+| `VC-4` | VCraft — Failure & Recovery             | Verified Current    | Backend capacity drop, DB slowdown, single-instance crash, and recovery |
+
+> **Educational Simulation Notice:** The VCraft case study is an **educational simulation** inside SystemLab. Traffic rates, service latencies, pool capacities, and proposed scaling topologies are illustrative simulation assumptions rather than verified production VCraft telemetry. Real horizontal scaling of VCraft also depends on shared storage for `uploads`/`private_evidence`, per-request `users.active` DB checks, and `PESSIMISTIC_WRITE` row locks. Read the full analysis in [VCraft Case Study](docs/case-studies/VCRAFT_ARCHITECTURE.md).
+
+![VCraft Experiment Comparison](docs/assets/vcraft-experiment-comparison.png)
+
+![VCraft Demo Walkthrough](docs/assets/vcraft-demo.gif)
 
 ---
 
-## Quick Start
-
-**Prerequisites:** Node.js `20+` (verified on `v24.14.0`) and npm `10+`.
-
-```bash
-git clone <your-repository-url>
-cd SystemLab
-npm ci
-npm run dev
-```
-
-Open the local URL printed by Vite (`http://localhost:5173`) in your browser.
-
----
-
-## Built-in Scenarios
+## Core Built-in Scenarios (`01`–`10`)
 
 | #   | Scenario                     | Focus                                                                   |
 | --- | ---------------------------- | ----------------------------------------------------------------------- |
@@ -74,59 +116,19 @@ Open the local URL printed by Vite (`http://localhost:5173`) in your browser.
 
 ---
 
-## Architecture Overview
+## Simulation Architecture & Reproducibility
 
-- `src/engine/` — Pure TypeScript DES kernel (zero React, DOM, timer, or `Math.random` dependencies, enforced via ESLint).
-- `src/workers/` — ES Module Web Worker (`simulation.worker.ts`) with monotonic `runId` race protection and automatic main-thread fallback.
-- `src/store/` — Fine-grained Zustand stores (`workspaceStore`, `simulationStore`, `experimentStore`).
-- `src/schemas/` & `src/features/persistence/` — Zod schema validation (`schemaVersion: 1`), prototype-pollution key sanitization, and Dexie IndexedDB storage.
-- `src/features/` & `src/app/` — Canvas editor, Inspector, Telemetry charts, Chaos Lab, Experiment Studio, Scenarios, Glossary, and Guided Tutorial.
+- `src/engine/` — Pure TypeScript DES kernel (`VirtualClock`, `MinHeap`, `SeededRng` `SplitMix32` -> `xoshiro128**`, zero React/DOM/`Math.random` imports enforced via ESLint).
+- `src/workers/` — ES Module Web Worker (`simulation.worker.ts`) with monotonic `runId` fencing and automatic main-thread fallback.
+- `src/store/`, `src/schemas/`, `src/features/` — Zustand stores, Zod schemas (`schemaVersion: 1`), Dexie IndexedDB persistence, React Flow canvas, Telemetry, Chaos Lab, Experiments, and Scenarios.
 
-See [Architecture Documentation](docs/architecture/ARCHITECTURE.md) and [ADRs](docs/adr/ADR-001-local-first-architecture.md).
+Changing UI playback speed (`0.25x` to `Fast-Run`) or telemetry batch size only paces wall-clock rendering and never alters simulated timestamps or random draws. See [Architecture Documentation](docs/architecture/ARCHITECTURE.md) and [Simulation Validation](docs/verification/SIMULATION_VALIDATION.md).
 
 ---
 
-## Simulation Model & Reproducibility
+## Reproducible Benchmarks
 
-Virtual simulation time (`VirtualClock`, ms) is the single source of truth. Changing UI playback speed (`0.25x` to `Fast-Run`) or telemetry batch size only paces wall-clock rendering and never alters discrete-event timestamps or random draws (`SplitMix32` -> `xoshiro128**`). Metrics reservoir sampling uses an isolated `rng.fork('metrics-reservoir')` stream so sampling never perturbs simulation traffic.
-
-Details and analytical proofs are documented in [Simulation Engine Specification](docs/architecture/SIMULATION_ENGINE.md) and [Simulation Validation](docs/verification/SIMULATION_VALIDATION.md).
-
----
-
-## Technology Stack
-
-- **UI & Graph:** React 19, TypeScript (strict), `@xyflow/react`, `@dagrejs/dagre`, Tailwind CSS v4, Radix UI, Lucide React, Recharts
-- **State & Storage:** Zustand, Dexie (IndexedDB), Zod
-- **Build & Tooling:** Vite 8, ESLint 10, Prettier, Vitest 5 (`@vitest/coverage-v8`), React Testing Library, Playwright
-
----
-
-## Testing & Verification
-
-```bash
-npm run lint           # ESLint + strict src/engine/ purity checks
-npm run format:check   # Prettier formatting check across src/ and tests/
-npm run typecheck      # TypeScript strict type checking
-npm run test           # Unit, analytical (Tests A-H), invariant, schema & integration suites
-npm run test:coverage  # V8 coverage check (src/engine/ >= 85% lines, >= 80% branches)
-npm run test:e2e       # Playwright Chromium (Chrome / PLAYWRIGHT_CHANNEL=msedge) E2E suite (after build)
-npm run benchmark      # Controlled multi-run DES engine benchmarks (1 warmup + 5 timed runs)
-npm run build          # Typecheck + production Vite bundle
-```
-
-Measured test, coverage, and security findings are available in:
-
-- [Independent Release Audit](INDEPENDENT_RELEASE_AUDIT.md)
-- [Simulation Validation](docs/verification/SIMULATION_VALIDATION.md)
-- [Test Report](docs/verification/TEST_REPORT.md)
-- [Security Review](docs/verification/SECURITY_REVIEW.md)
-
----
-
-## Performance
-
-Measured locally on Windows 11 (`Node v24.14.0`, 1 warmup + 5 timed runs per case, distinct seeds `42`/`101`/`202`/`303`):
+Measured locally on Windows 11 (`Node v24.14.0`, `1 warmup + 5 timed runs` per case, distinct deterministic seeds `42`/`101`/`202`/`303`/`404`/`505`):
 
 | Workload                       | Topology         | Median Wall Time (Min–Max)   | DES Throughput       | Virtual Workload Rate |
 | ------------------------------ | ---------------- | ---------------------------- | -------------------- | --------------------- |
@@ -135,41 +137,43 @@ Measured locally on Windows 11 (`Node v24.14.0`, 1 warmup + 5 timed runs per cas
 | 100,000 requests (40s stretch) | 6-node 3-tier    | 709.34 ms (524.59–914.56 ms) | 1,023,249 events/sec | 2,506.5 sim req/s     |
 | 5,000 requests (10s)           | 25-node, 43-edge | 30.59 ms (29.67–38.46 ms)    | 1,331,976 events/sec | 501.9 sim req/s       |
 
-> **Metric note:** `DES Throughput (events/sec)` measures in-memory discrete-event kernel execution in Node; `Virtual Workload Rate (sim req/s)` is simulated model time throughput and must not be interpreted as production HTTP server RPS. See [Performance Report](docs/verification/PERFORMANCE_REPORT.md) for failure-injection, queue-saturation, IQR, and 20-run `WorkerSessionRunner` measurements.
+> **Metric note:** `DES Throughput (events/sec)` measures in-memory discrete-event kernel execution in Node; `Virtual Workload Rate (sim req/s)` measures simulated model-time arrival rate. **Neither figure represents production HTTP server RPS.** See [Performance Report](docs/verification/PERFORMANCE_REPORT.md) for failure/recovery, queue saturation, IQR, and 20-iteration `WorkerSessionRunner` checks.
 
 ---
 
-## Limitations
+## Testing & Verification
 
-SystemLab is an **educational simulation playground**, not a production capacity-planning oracle or load-testing replacement. Key simplifications include DAG-only forwarding topologies, probabilistic cache hit trials (no key-level LRU eviction), abstract edge latencies (no TCP/TLS modeling), and open-loop traffic generation. Read the full list in [Known Limitations](docs/KNOWN_LIMITATIONS.md).
+```bash
+npm run lint           # ESLint + strict src/engine/ purity checks
+npm run format:check   # Prettier formatting check across src/ and tests/
+npm run typecheck      # Strict TypeScript checking
+npm run test:runner    # Python unittest suite for scripts/run_demo.py process & port safety
+npm run test:coverage  # Vitest unit, analytical (Tests A-H), invariant, schema & integration + V8 coverage
+npm run test:e2e       # Playwright E2E suite on isolated port 5202 (Chrome / PLAYWRIGHT_CHANNEL=msedge)
+npm run benchmark      # Multi-run deterministic DES benchmarks
+npm run build          # Typecheck + production Vite bundle
+```
 
----
-
-## Documentation Links
-
-- [User Guide](docs/guides/USER_GUIDE.md)
-- [Developer Guide](docs/guides/DEVELOPER_GUIDE.md)
-- [Scenario Authoring](docs/guides/SCENARIO_AUTHORING.md)
-- [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md)
-- [Data Model](docs/architecture/DATA_MODEL.md)
-- [Product Research](docs/research/PRODUCT_RESEARCH.md)
-- [Independent Release Audit](INDEPENDENT_RELEASE_AUDIT.md)
-- [Release Notes v1.0.0](docs/RELEASE_NOTES_v1.0.0.md)
+Verification reports: [Test Report](docs/verification/TEST_REPORT.md) · [Simulation Validation](docs/verification/SIMULATION_VALIDATION.md) · [Security Review](docs/verification/SECURITY_REVIEW.md) · [Independent Release Audit](INDEPENDENT_RELEASE_AUDIT.md).
 
 ---
 
-## Contributing
+## Known Limitations
 
-Contributions, bug reports, and scenario proposals are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
-
----
-
-## Roadmap
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for planned P1/P2 enhancements such as stateful LRU cache eviction modeling, multi-client groups, and optional replication lag models.
+SystemLab is an **educational simulation playground**, not a production capacity planner or load-testing replacement. Key abstractions include DAG-only forwarding (bounded local app-server retries), probabilistic cache hit trials (no key-level LRU eviction or Zipfian keys), open-loop client traffic, and abstract static network latencies (no TCP/TLS modeling). Read [Known Limitations](docs/KNOWN_LIMITATIONS.md).
 
 ---
 
-## License
+## Deployment
 
+SystemLab builds to pure static assets (`dist/`) with zero backend or localhost dependencies:
+
+- **Target GitHub Pages URL:** `https://nguyen-xuantung.github.io/SystemLab/` (configured via `.github/workflows/deploy-pages.yml` using `VITE_BASE_PATH=/SystemLab/`).
+- **Local subpath verification:** See [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md).
+
+---
+
+## Contributing & License
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).  
 Released under the [MIT License](LICENSE).

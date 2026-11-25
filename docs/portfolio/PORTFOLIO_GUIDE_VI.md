@@ -48,8 +48,9 @@
      - **25-node topology · 5,000 reqs (seed 303):** median `30.59 ms` (`29.67–38.46 ms`, `40,743` events, `1.33M` events/s)
      - Toàn bộ kịch bản (gồm failure/recovery và queue saturation) đều bảo toàn request (`allConserved: true`). _(Lưu ý: `events/s` là thông lượng discrete-event trong Node, `sim req/s` là tốc độ tải ảo trong thời gian mô phỏng, không phải throughput HTTP production)._
 4. **Chất lượng kiểm thử & bảo mật:**
-   - **Unit + Integration (Vitest):** `15` file test, `67` tests, độ bao phủ `91.43%` statements, `82.40%` branches, `97.48%` functions, `94.68%` lines (trên `src/engine/`, `src/schemas/`, `src/features/scenarios/`).
-   - **E2E (Playwright + Chrome & Edge Chromium thực):** `4` luồng E2E toàn diện không có console error hay page error (`0` uncaught errors).
+   - **Unit + Integration (Vitest):** `15` file test, `69` tests (bao gồm 10 kịch bản cốt lõi + 4 kịch bản VCraft Case Study), độ bao phủ `91.86%` statements, `82.64%` branches, `98.02%` functions, `95.07%` lines (trên `src/engine/`, `src/schemas/`, `src/features/scenarios/`).
+   - **E2E (Playwright + Chrome & Edge Chromium thực, port `5202`):** `5` luồng E2E toàn diện (bao gồm VCraft A/B fair comparison) không có console error hay page error (`0` uncaught errors).
+   - **Python Demo Runner (`scripts/run_demo.py`, port `5200`):** `5` bài test `unittest` xác minh port isolation, chống PID reuse, deadlock/timeout và lifecycle start/status/stop an toàn.
    - **Security (`npm audit` & static scan):** `0` lỗ hổng đã biết, không dùng `eval`/`new Function`/`dangerouslySetInnerHTML`, có Zod schema validation + `stripDangerousKeys` (`MAX_JSON_DEPTH = 64`).
 
 _(Lưu ý: Xem con số cập nhật mới nhất ở `INDEPENDENT_RELEASE_AUDIT.md`, `FINAL_RELEASE_REPORT.md` và `docs/verification/` sau lần verify cuối cùng.)_
@@ -93,11 +94,11 @@ Xem kịch bản lời thoại chi tiết từng giây tại [DEMO_SCRIPT_VI.md]
   - Architected and shipped a local-first discrete-event simulation playground using a pure TypeScript engine (`src/engine/`) strictly isolated from React/DOM and offloaded to a Web Worker with monotonic `runId` fencing and automatic main-thread fallback.
   - Designed deterministic experiment reproduction using a `SplitMix32`/`xoshiro128**` PRNG (`SeededRng`), bounded-memory R-7 percentile metrics (`50k` latency reservoir), DAG cycle validation (Kahn's algorithm), and `50`-step undo/redo persistence via IndexedDB (`Dexie`).
   - Eliminated a hot-path sorting bottleneck inside the DES step loop (verified via multi-run benchmarks reaching median `~59 ms` for `10k` requests and `~709 ms` for `100k` requests while preserving strict request conservation).
-  - Verified reliability across unit, integration, analytical queueing, and headless Chrome/Edge E2E suites (`67` Vitest tests, `91.43%` statement coverage on engine/schema/scenario targets; `4` Playwright E2E flows) plus Zod import hardening against prototype pollution (`stripDangerousKeys`, depth cap `64`, `2 MB` size limit).
+  - Verified reliability across unit, integration, analytical queueing, Python demo runner, and headless Chrome/Edge E2E suites (`69` Vitest tests, `91.86%` statement coverage on engine/schema/scenario targets; `5` Playwright E2E flows; `5` Python runner lifecycle tests) plus Zod import hardening against prototype pollution (`stripDangerousKeys`, depth cap `64`, `2 MB` size limit).
 
 ### Lựa chọn 2 — Rút gọn 2–3 dòng cho CV thực tập sinh (1 trang)
 
-- **SystemLab — Deterministic System Design Simulator** (_Open-Source Personal Project, AI-Assisted Workflow_): Built a browser-based discrete-event system simulator (`TypeScript`, `React`, `Web Workers`, `Vitest`, `Playwright`) featuring 10 modeled infrastructure nodes, fault injection, request-hop tracing, and A/B experiment comparison; isolated a pure TS DES engine (`100k` requests in `~709 ms` median) with verified analytical queueing invariants and prototype-pollution-safe JSON schema persistence.
+- **SystemLab — Deterministic System Design Simulator** (_Open-Source Personal Project, AI-Assisted Workflow_): Built a browser-based discrete-event system simulator (`TypeScript`, `React`, `Web Workers`, `Vitest`, `Playwright`) featuring 10 modeled infrastructure nodes, fault injection, request-hop tracing, a 4-part real-world VCraft case study, and A/B experiment comparison; isolated a pure TS DES engine (`100k` requests in `~709 ms` median) with verified analytical queueing invariants and prototype-pollution-safe JSON schema persistence.
 
 _(Mẹo phỏng vấn: Nếu nhà tuyển dụng hỏi có dùng AI khi làm không, hãy trả lời thẳng thắn: bạn đóng vai trò Product Architect / Reviewer định nghĩa invariants, kiểm chứng lỗi hiệu năng, review từng boundary bảo mật/Worker/test và dùng AI assistant tăng tốc code & tài liệu — điều quan trọng nhất là bạn giải thích được từng dòng trong `engine.ts` và chứng minh qua test suite.)_
 

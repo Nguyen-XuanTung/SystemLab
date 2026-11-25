@@ -1588,7 +1588,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
         {
           id: 'vcraft-client',
           label: 'VCraft Customers & Artisans',
-          position: { x: 30, y: 190 },
+          position: { x: 20, y: 190 },
           config: {
             type: 'client',
             ratePerSecond: 60,
@@ -1603,7 +1603,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
         {
           id: 'vcraft-lb',
           label: 'Proposed Load Balancer',
-          position: { x: 280, y: 190 },
+          position: { x: 320, y: 190 },
           config: {
             type: 'load_balancer',
             strategy: 'least_in_flight',
@@ -1614,7 +1614,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
         {
           id: 'vcraft-backend-1',
           label: 'Spring Boot Instance 1',
-          position: { x: 560, y: 80 },
+          position: { x: 630, y: 70 },
           config: {
             type: 'app_server',
             concurrency: 4,
@@ -1630,7 +1630,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
         {
           id: 'vcraft-backend-2',
           label: 'Spring Boot Instance 2',
-          position: { x: 560, y: 300 },
+          position: { x: 630, y: 310 },
           config: {
             type: 'app_server',
             concurrency: 4,
@@ -1646,7 +1646,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
         {
           id: 'vcraft-cache',
           label: 'Proposed Read Cache',
-          position: { x: 840, y: 190 },
+          position: { x: 940, y: 190 },
           config: {
             type: 'cache',
             lookupLatencyMs: 3,
@@ -1658,7 +1658,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
         {
           id: 'vcraft-mysql',
           label: 'MySQL 8.4 Primary',
-          position: { x: 1120, y: 190 },
+          position: { x: 1260, y: 190 },
           config: {
             type: 'database',
             maxConnections: 3,
@@ -1718,7 +1718,7 @@ export const BUILT_IN_SCENARIOS: BuiltInScenario[] = [
           target: 'vcraft-mysql',
           latencyMs: 3,
           routeType: 'default',
-          label: 'Miss/Write · 3 ms',
+          label: '3 ms',
         },
       ],
     }),
